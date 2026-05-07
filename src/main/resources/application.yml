@@ -1,0 +1,67 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: land-tax-core-service
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/land_tax_management
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# JWT Configuration - SHARED SECRET KEY (phải giống hệt với vneid-auth-service)
+jwt:
+  secret: ${JWT_SECRET:ThangLong2025VNeIDLandTaxSharedSecretKeyForJWTAuth!@#$%}
+
+# VNeID Auth Service
+vneid:
+  service:
+    url: http://localhost:9090
+
+# Internal API Security
+internal:
+  api:
+    secret: ${INTERNAL_API_SECRET:VNeIDInternalSecretKey2025}
+
+# Cloudinary Configuration
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:mock-cloud-name}
+  api-key: ${CLOUDINARY_API_KEY:mock-api-key}
+  api-secret: ${CLOUDINARY_API_SECRET:mock-api-secret}
+
+# Gemini AI Configuration
+gemini:
+  api-key: ${GEMINI_API_KEY:mock-gemini-key-for-testing}
+
+# PayOS Configuration
+payos:
+  client-id: ${PAYOS_CLIENT_ID:}
+  api-key: ${PAYOS_API_KEY:}
+  checksum-key: ${PAYOS_CHECKSUM_KEY:}
+  return-url: ${PAYOS_RETURN_URL:http://localhost:3000/payment/success}
+  cancel-url: ${PAYOS_CANCEL_URL:http://localhost:3000/payment/cancel}
+
+# ──────────────────────────────────────────────
+# File Upload Configuration
+# ──────────────────────────────────────────────
+app:
+  upload:
+    dir: ${UPLOAD_DIR:uploads}        # Thư mục lưu file vật lý (tương đối với working dir)
+  server:
+    base-url: ${SERVER_BASE_URL:http://localhost:8080}  # Base URL để tạo file_url
+
+servlet:
+    multipart:
+      enabled: true
+      max-file-size: 20MB            # Giới hạn kích thước mỗi file
+      max-request-size: 50MB          # Giới hạn kích thước toàn bộ request
