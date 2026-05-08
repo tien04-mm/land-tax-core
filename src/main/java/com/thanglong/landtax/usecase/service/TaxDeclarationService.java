@@ -5,6 +5,7 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxDeclarati
 import com.thanglong.landtax.usecase.dto.TaxDeclarationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -28,12 +29,26 @@ public class TaxDeclarationService {
 
         List<TaxDeclarationEntity> entities = repository.findBySenderCccdOrderBySubmittedAtDesc(cccd);
 
-        if (entities.isEmpty() && "001190000101".equals(cccd)) {
-            log.info("Trả về dữ liệu mock tờ khai cho CCCD test: 001190000101");
+        if (entities.isEmpty() && ("001190000101".equals(cccd) || "001190000104".equals(cccd))) {
+            log.info("Trả về dữ liệu mock tờ khai cho CCCD test: {}", cccd);
             return buildMockData(cccd);
         }
 
         return entities.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    public TaxDeclarationResponse getDeclarationById(Integer id, String currentCccd) {
+        log.info("Lấy chi tiết tờ khai {} cho CCCD: {}", id, currentCccd);
+
+        TaxDeclarationEntity entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tờ khai không tồn tại"));
+
+        if (!java.util.Objects.equals(entity.getSenderCccd(), currentCccd)) {
+            log.warn("Cảnh báo bảo mật: CCCD {} cố xem tờ khai {} của {}", currentCccd, id, entity.getSenderCccd());
+            throw new AccessDeniedException("Bạn không có quyền xem hồ sơ này");
+        }
+
+        return mapToResponse(entity);
     }
 
     private TaxDeclarationResponse mapToResponse(TaxDeclarationEntity entity) {

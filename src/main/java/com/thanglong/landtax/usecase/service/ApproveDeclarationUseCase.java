@@ -5,11 +5,17 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AccountEn
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.ProcessingLogEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxPaymentEntity;
+import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity;
+import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandParcelEntity;
+import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandPriceEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.ProcessingLogJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxPaymentJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxDeclarationRepository;
+import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxBillRepository;
+import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandParcelJpaRepository;
+import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandPriceJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity;
 import com.thanglong.landtax.usecase.dto.ReviewDeclarationRequest;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +60,9 @@ public class ApproveDeclarationUseCase {
     private final SyncUserFromVneidUseCase syncUserFromVneidUseCase;
     private final AuditLogService auditLogService;
     private final TaxDeclarationRepository taxDeclarationRepository;
+    private final TaxBillRepository taxBillRepository;
+    private final LandParcelJpaRepository landParcelJpaRepository;
+    private final LandPriceJpaRepository landPriceJpaRepository;
 
     /** Các role được phép duyệt tờ khai */
     private static final Set<String> ALLOWED_ROLES = Set.of(
@@ -89,9 +98,9 @@ public class ApproveDeclarationUseCase {
 
         String oldStatus = record.getCurrentStatus();
 
-        if (!"PENDING".equals(oldStatus) && !"WARNING_FRAUD".equals(oldStatus)) {
+        if (!"VERIFIED".equals(oldStatus)) {
             throw new RuntimeException(
-                    "Chỉ có thể duyệt tờ khai ở trạng thái PENDING hoặc WARNING_FRAUD. " +
+                    "Chỉ có thể duyệt hồ sơ ở trạng thái VERIFIED. " +
                             "Trạng thái hiện tại: " + oldStatus);
         }
 
@@ -100,34 +109,43 @@ public class ApproveDeclarationUseCase {
         recordJpaRepository.save(record);
 
         // Tìm và cập nhật TaxDeclarationEntity tương ứng
-        log.info("Searching for TaxDeclaration: citizenId={}, parcelId={}, status=PENDING", 
-                record.getCitizenId(), record.getLandParcelId());
-                
         List<TaxDeclarationEntity> declarations = taxDeclarationRepository
-                .findByCitizenIdAndParcelIdAndStatus(record.getCitizenId(), record.getLandParcelId(), "PENDING");
+                .findByCitizenIdAndParcelIdAndStatus(record.getCitizenId(), record.getLandParcelId(), "VERIFIED");
 
+        BigDecimal taxAmount = BigDecimal.ZERO;
         if (!declarations.isEmpty()) {
             TaxDeclarationEntity declaration = declarations.get(0);
             declaration.setStatus("APPROVED");
             
-            // Tính toán: calculatedTaxAmount = actualArea * unitPrice * 0.0003 * 0.5
+            // Tính toán số tiền thuế dựa trên diện tích đất và bảng giá đã được Địa chính cập nhật.
+            LandParcelEntity parcel = landParcelJpaRepository.findById(record.getLandParcelId()).orElse(null);
+            if (parcel != null && parcel.getLandTypeId() != null && parcel.getAreaId() != null) {
+                Optional<LandPriceEntity> priceOpt = landPriceJpaRepository.findLatestPrice(parcel.getLandTypeId(), parcel.getAreaId());
+                if (priceOpt.isPresent()) {
+                    declaration.setUnitPrice(priceOpt.get().getUnitPrice());
+                }
+            }
+
             if (declaration.getActualArea() != null && declaration.getUnitPrice() != null) {
-                BigDecimal taxAmount = declaration.getActualArea()
+                taxAmount = declaration.getActualArea()
                         .multiply(declaration.getUnitPrice())
                         .multiply(new BigDecimal("0.0003"))
                         .multiply(new BigDecimal("0.5"));
                 declaration.setCalculatedTaxAmount(taxAmount);
-                log.info("Updating TaxDeclaration {}: status=APPROVED, calculatedTaxAmount={}", 
-                        declaration.getId(), taxAmount);
-            } else {
-                log.warn("TaxDeclaration {} has null area or unit price, skipping calculation", declaration.getId());
             }
             
             taxDeclarationRepository.save(declaration);
-            log.info("TaxDeclaration {} saved successfully", declaration.getId());
-        } else {
-            log.warn("No PENDING TaxDeclaration found for citizenId={} and parcelId={}", 
-                    record.getCitizenId(), record.getLandParcelId());
+            
+            // Sinh Hóa đơn (Bill)
+            TaxBillEntity bill = TaxBillEntity.builder()
+                .cccdNumber(declaration.getSenderCccd())
+                .amount(taxAmount)
+                .status("UNPAID")
+                .description("Hóa đơn thanh toán thuế đất cho hồ sơ " + recordId)
+                .declarationId(declaration.getId())
+                .basePrice(declaration.getUnitPrice())
+                .build();
+            taxBillRepository.save(bill);
         }
 
         log.info("Record {} status updated: {} → APPROVED", recordId, oldStatus);
@@ -136,9 +154,8 @@ public class ApproveDeclarationUseCase {
         List<TaxPaymentEntity> payments = taxPaymentJpaRepository.findByRecordId(recordId);
         for (TaxPaymentEntity payment : payments) {
             payment.setPaymentStatus("AWAITING_PAYMENT");
+            payment.setTotalAmountDue(taxAmount); // Đồng bộ số tiền
             taxPaymentJpaRepository.save(payment);
-
-            log.info("Payment {} status updated: UNPAID → AWAITING_PAYMENT", payment.getPayId());
         }
 
         // ===== BƯỚC 5: Ghi nhật ký processing_logs =====
@@ -160,7 +177,7 @@ public class ApproveDeclarationUseCase {
         notificationService.notifyDeclarationApproved(record.getCitizenId(), recordId);
 
         // ===== BƯỚC 7: Ghi Audit Log =====
-        auditLogService.log("APPROVE_DECLARATION", "TAX_DECLARATION", String.valueOf(recordId), "Duyệt tờ khai thuế");
+        auditLogService.log("APPROVE_DECLARATION", "TAX_DECLARATION", String.valueOf(recordId), "Cán bộ thuế " + cccdNumber + " đã phê duyệt hồ sơ " + recordId + " và khởi tạo hóa đơn");
 
         return Map.of(
                 "recordId", recordId,

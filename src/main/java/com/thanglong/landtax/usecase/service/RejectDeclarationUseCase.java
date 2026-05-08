@@ -9,6 +9,8 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRe
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.ProcessingLogJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxPaymentJpaRepository;
+import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxDeclarationRepository;
+import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity;
 import com.thanglong.landtax.usecase.dto.ReviewDeclarationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +53,7 @@ public class RejectDeclarationUseCase {
     private final NotificationService notificationService;
     private final SyncUserFromVneidUseCase syncUserFromVneidUseCase;
     private final AuditLogService auditLogService;
+    private final TaxDeclarationRepository taxDeclarationRepository;
 
     /** Các role được phép từ chối tờ khai */
     private static final Set<String> ALLOWED_ROLES = Set.of(
@@ -101,6 +104,18 @@ public class RejectDeclarationUseCase {
         record.setCurrentStatus("REJECTED");
         recordJpaRepository.save(record);
 
+        // Cập nhật TaxDeclarationEntity
+        List<TaxDeclarationEntity> declarations = taxDeclarationRepository
+                .findByCitizenIdAndParcelIdAndStatus(record.getCitizenId(), record.getLandParcelId(), oldStatus);
+
+        if (!declarations.isEmpty()) {
+            TaxDeclarationEntity declaration = declarations.get(0);
+            declaration.setStatus("REJECTED");
+            declaration.setReviewNote(request.getProcessorNotes());
+            taxDeclarationRepository.save(declaration);
+            log.info("Đã cập nhật trạng thái tờ khai {} sang REJECTED", declaration.getId());
+        }
+
         log.info("Record {} status updated: {} → REJECTED", recordId, oldStatus);
 
         // ===== BƯỚC 5: Cập nhật tax_payments → CANCELLED =====
@@ -132,7 +147,7 @@ public class RejectDeclarationUseCase {
                 record.getCitizenId(), recordId, request.getProcessorNotes());
 
         // ===== BƯỚC 8: Ghi Audit Log =====
-        auditLogService.log("REJECT_DECLARATION", "TAX_DECLARATION", String.valueOf(recordId), "Từ chối tờ khai: " + request.getProcessorNotes());
+        auditLogService.log("REJECT_DECLARATION", "TAX_DECLARATION", String.valueOf(recordId), "Cán bộ thuế " + cccdNumber + " đã từ chối hồ sơ " + recordId + ". Lý do: " + request.getProcessorNotes());
 
         return Map.of(
                 "recordId", recordId,

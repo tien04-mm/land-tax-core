@@ -6,6 +6,7 @@ import com.thanglong.landtax.usecase.dto.ComplaintResponse;
 import com.thanglong.landtax.usecase.dto.ResolveComplaintRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ public class ComplaintController {
     private final ComplaintService complaintService;
 
     @PostMapping("/complaints")
+    @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<ComplaintEntity> createComplaint(@RequestBody Map<String, Object> request) {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
         ComplaintEntity created = complaintService.createComplaint(cccd, request);
@@ -27,6 +29,7 @@ public class ComplaintController {
     }
 
     @GetMapping("/complaints/me")
+    @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<List<ComplaintEntity>> getMyComplaints() {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
         List<ComplaintEntity> complaints = complaintService.getMyComplaints(cccd);

@@ -17,7 +17,7 @@ public class DelegationController {
     private final DelegationService delegationService;
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delegateRole(@RequestBody Map<String, Object> request) {
         try {
             RoleDelegationEntity delegation = delegationService.delegateRole(request);

@@ -3,6 +3,7 @@ package com.thanglong.landtax.infrastructure.adapter.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -58,6 +59,7 @@ public class LandParcelController {
      * GET /api/land-parcels/my-assets — Lấy danh sách thửa đất của riêng công dân (dựa vào JWT).
      */
     @GetMapping("/my-assets")
+    @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<?> getMyLandParcels() {
         String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
         log.info("GET /api/land-parcels/my-assets — owner_cccd={}", cccd);
@@ -152,9 +154,26 @@ public class LandParcelController {
     }
 
     /**
+     * GET /api/land-parcels/all — Lấy toàn bộ danh sách thửa đất (không lọc theo chủ sở hữu).
+     */
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('LAND_OFFICER')")
+    public ResponseEntity<?> getAllParcelsForOfficer() {
+        log.info("GET /api/land-parcels/all — LAND_OFFICER xem toàn bộ thửa đất");
+        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandParcelEntity> allParcels = landParcelJpaRepository.findAll();
+        
+        return ResponseEntity.ok(Map.of(
+                "data", allParcels,
+                "total", allParcels.size(),
+                "message", "Lấy danh sách toàn bộ thửa đất thành công"
+        ));
+    }
+
+    /**
      * GET /api/land-parcels — Lấy danh sách thửa đất (phân trang).
      */
     @GetMapping
+    @PreAuthorize("hasRole('LAND_OFFICER')")
     public ResponseEntity<?> getAllParcels(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -209,6 +228,7 @@ public class LandParcelController {
      * POST /api/land-parcels — Tạo mới thửa đất.
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'LAND_OFFICER')")
     public ResponseEntity<?> createParcel(@RequestBody Map<String, Object> body) {
         log.info("[MOCK] POST /api/land-parcels — body keys: {}", body.keySet());
 
@@ -236,6 +256,7 @@ public class LandParcelController {
      * PUT /api/land-parcels/{id} — Cập nhật thông tin thửa đất.
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LAND_OFFICER')")
     public ResponseEntity<?> updateParcel(@PathVariable Long id,
                                            @RequestBody Map<String, Object> body) {
         log.info("[MOCK] PUT /api/land-parcels/{} — body keys: {}", id, body.keySet());
@@ -264,6 +285,7 @@ public class LandParcelController {
      * DELETE /api/land-parcels/{id} — Xóa thửa đất.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Xóa thửa đất")
     public ResponseEntity<?> deleteParcel(@PathVariable Long id) {
         log.info("[MOCK] DELETE /api/land-parcels/{}", id);

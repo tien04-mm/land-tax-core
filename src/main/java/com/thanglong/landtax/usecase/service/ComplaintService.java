@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +26,7 @@ public class ComplaintService {
     private final NotificationService notificationService;
     private final SyncUserFromVneidUseCase syncUserFromVneidUseCase;
     private final ComplaintMapper mapper;
+    private final AuditLogService auditLogService;
 
     public ComplaintEntity createComplaint(String cccd, Map<String, Object> request) {
         log.info("Tạo khiếu nại mới cho CCCD: {}", cccd);
@@ -36,7 +38,13 @@ public class ComplaintService {
                 .status("PENDING")
                 .createdAt(LocalDateTime.now())
                 .build();
-        return complaintRepository.save(complaint);
+        ComplaintEntity saved = complaintRepository.save(complaint);
+        
+        auditLogService.log("CREATE_COMPLAINT", "COMPLAINT", 
+            String.valueOf(saved.getId()), 
+            "Công dân gửi khiếu nại với tiêu đề: " + request.get("title"));
+            
+        return saved;
     }
 
     public List<ComplaintEntity> getMyComplaints(String cccd) {
@@ -59,6 +67,11 @@ public class ComplaintService {
         complaint.setAdminResponse(request.getAdminResponse());
         
         ComplaintEntity savedComplaint = complaintRepository.save(complaint);
+        
+        String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
+        auditLogService.log("RESOLVE_COMPLAINT", "COMPLAINT", 
+            String.valueOf(id), 
+            "Cán bộ địa chính " + cccd + " đã phản hồi khiếu nại " + id + ". Nội dung: " + request.getAdminResponse());
 
         // Gửi thông báo tự động cho người dân
         try {

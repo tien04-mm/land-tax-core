@@ -47,6 +47,7 @@ public class SubmitDeclarationUseCase {
     private final TaxPaymentJpaRepository taxPaymentJpaRepository;
     private final TaxDeclarationRepository taxDeclarationRepository;
     private final AttachmentJpaRepository attachmentJpaRepository;
+    private final AuditLogService auditLogService;
 
     /**
      * Nộp tờ khai thuế đất.
@@ -86,11 +87,11 @@ public class SubmitDeclarationUseCase {
                 .citizenId(citizenId)
                 .landParcelId(request.getParcelId())
                 .recordCategory("TAX_DECLARATION")
-                .currentStatus("PENDING")
+                .currentStatus("SUBMITTED")
                 .build();
 
         RecordEntity savedRecord = recordJpaRepository.save(record);
-        log.info("Record created: recordId={}, status=PENDING", savedRecord.getRecordId());
+        log.info("Record created: recordId={}, status=SUBMITTED", savedRecord.getRecordId());
 
         // ===== BƯỚC 5: Tạo bản ghi tax_payments =====
         TaxPaymentEntity taxPayment = TaxPaymentEntity.builder()
@@ -126,13 +127,18 @@ public class SubmitDeclarationUseCase {
             .declaredArea(taxResult.getActualArea()) // Sử dụng luôn diện tích thực tế
             .actualArea(taxResult.getActualArea())
             .declaredPurpose(parcel.getUsageType()) // Lấy mục đích từ sổ đỏ
-            .status("PENDING")
+            .status("SUBMITTED")
             .calculatedTaxAmount(taxResult.getTaxAmount())
             .unitPrice(taxResult.getUnitPrice())
             .taxRate(taxResult.getExemptionRate()) // Lưu tạm mức giảm trừ vào cột này hoặc log.
             .supportingDocuments(request.getAttachmentIds() != null ? request.getAttachmentIds().toString() : null)
             .build();
         taxDeclarationRepository.save(declaration);
+
+        // Ghi log hệ thống
+        auditLogService.log("SUBMIT_DECLARATION", "TAX_DECLARATION", 
+            String.valueOf(savedRecord.getRecordId()), 
+            "Công dân nộp hồ sơ khai thuế cho thửa đất " + request.getParcelId());
 
         // ===== BƯỚC 7: Trả về kết quả =====
         return TaxDeclarationResponse.builder()
@@ -143,7 +149,7 @@ public class SubmitDeclarationUseCase {
                 .declaredArea(taxResult.getActualArea())
                 .actualArea(taxResult.getActualArea())
                 .declaredPurpose(parcel.getUsageType())
-                .status("PENDING")
+                .status("SUBMITTED")
                 .calculatedTaxAmount(taxResult.getTaxAmount())
                 .unitPrice(taxResult.getUnitPrice())
                 .taxRate(taxResult.getExemptionRate())

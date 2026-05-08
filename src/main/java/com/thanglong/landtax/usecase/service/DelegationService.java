@@ -24,6 +24,7 @@ public class DelegationService {
     private final CitizenLocalJpaRepository citizenRepository;
     private final AccountJpaRepository accountRepository;
     private final RoleJpaRepository roleRepository;
+    private final AuditLogService auditLogService;
 
     public RoleDelegationEntity delegateRole(Map<String, Object> request) {
         String fromUserCccd = (String) request.get("from_user_cccd");
@@ -64,6 +65,12 @@ public class DelegationService {
                 .status("ACTIVE")
                 .build();
 
-        return delegationRepository.save(delegation);
+        RoleDelegationEntity saved = delegationRepository.save(delegation);
+        
+        auditLogService.log("CREATE_DELEGATION", "ROLE_DELEGATION", 
+            saved.getDelegationId() != null ? String.valueOf(saved.getDelegationId()) : toUserCccd,
+            String.format("Ủy quyền %s từ %s cho %s đến %s", roleCode, fromUserCccd, toUserCccd, endDateStr));
+            
+        return saved;
     }
 }

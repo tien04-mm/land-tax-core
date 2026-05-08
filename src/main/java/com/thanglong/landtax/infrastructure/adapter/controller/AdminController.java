@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,7 @@ public class AdminController {
     }
 
     @PutMapping("/users/{cccd}/role")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateUserRole(@PathVariable String cccd, @RequestParam String role) {
         Integer roleId = switch (role) {
             case "ROLE_ADMIN" -> 1;
@@ -105,20 +107,13 @@ public class AdminController {
      * Yêu cầu quyền ROLE_ADMIN.
      */
     @GetMapping("/audit-logs")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAuditLogs(
             @RequestParam(required = false) String userCccd,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate) {
         
-        boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .getAuthentication().getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().contains("ADMIN"));
-        
-        if (!isAdmin) {
-            return ResponseEntity.status(403).body(Map.of("error", "Chỉ ROLE_ADMIN mới có quyền xem nhật ký hệ thống"));
-        }
-
         List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.AuditLogEntity> logs = 
             auditLogJpaRepository.findWithFilters(userCccd, action, fromDate, toDate);
 

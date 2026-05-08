@@ -39,6 +39,7 @@ public class HandlePaymentWebhookUseCase {
     private final NotificationService notificationService;
     private final TaxBillRepository taxBillRepository;
     private final NotificationJpaRepository notificationJpaRepository;
+    private final AuditLogService auditLogService;
 
     /**
      * Xử lý thanh toán thành công.
@@ -46,7 +47,6 @@ public class HandlePaymentWebhookUseCase {
      * @param orderCode Mã đơn hàng PayOS gửi qua webhook (= transaction_code trong DB)
      */
     @Transactional
-    @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Thanh toán thành công")
     public void handlePaymentSuccess(String orderCode) {
         log.info("Processing PayOS webhook SUCCESS for orderCode: {}", orderCode);
 
@@ -83,9 +83,9 @@ public class HandlePaymentWebhookUseCase {
                 .accountId(0) // Giá trị dummy nếu không dùng account_id
                 .notiType("PAYMENT_SUCCESS")
                 .cccdNumber(bill.getCccdNumber())
-                .message("Cảm ơn ông/bà, hóa đơn " + bill.getBillId() + " đã được thanh toán thành công")
+                .message("Hóa đơn cho hồ sơ " + bill.getDeclarationId() + " đã được thanh toán thành công")
                 .title("Thanh toán thành công")
-                .content("Cảm ơn ông/bà, hóa đơn " + bill.getBillId() + " đã được thanh toán thành công")
+                .content("Hóa đơn cho hồ sơ " + bill.getDeclarationId() + " đã được thanh toán thành công")
                 .isRead(false)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -119,6 +119,9 @@ public class HandlePaymentWebhookUseCase {
                 }
             }
         }
+        
+        // Ghi AuditLog
+        auditLogService.log("WEBHOOK_PAYOS_SUCCESS", "TAX_PAYMENT", orderCode, "Hệ thống xác nhận thanh toán thành công từ PayOS cho đơn hàng " + orderCode);
 
         log.info("Webhook processing completed for orderCode: {}", orderCode);
     }
