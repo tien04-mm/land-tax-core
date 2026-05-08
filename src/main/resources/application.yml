@@ -45,11 +45,12 @@ gemini:
 
 # PayOS Configuration
 payos:
-  client-id: ${PAYOS_CLIENT_ID:}
-  api-key: ${PAYOS_API_KEY:}
-  checksum-key: ${PAYOS_CHECKSUM_KEY:}
-  return-url: ${PAYOS_RETURN_URL:http://localhost:3000/payment/success}
-  cancel-url: ${PAYOS_CANCEL_URL:http://localhost:3000/payment/cancel}
+  client-id: e007b95d-45b9-4916-bf47-404c4f6c7807
+  api-key: 1ab4a6a8-795b-4edd-b280-5d7a9269d553
+  checksum-key: 62664100d5321347ef3db07a32f59f06c2f20279b495bba97c40f0f5d0a57128
+  # Hai URL này phải là địa chỉ Front-end (của người dân dùng)
+  return-url: http://localhost:3000/payment/success
+  cancel-url: http://localhost:3000/payment/cancel
 
 # ──────────────────────────────────────────────
 # File Upload Configuration
