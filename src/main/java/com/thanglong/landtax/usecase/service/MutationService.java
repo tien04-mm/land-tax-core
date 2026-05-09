@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class MutationService {
 
     private final MutationRequestJpaRepository mutationRequestJpaRepository;
@@ -24,12 +25,16 @@ public class MutationService {
 
     @Transactional
     public MutationRequestEntity createMutationRequest(MutationRequestEntity request) {
+        if (request == null || request.getParcelId() == null) {
+            throw new IllegalArgumentException("Mutation request and parcel ID cannot be null");
+        }
         log.info("Creating mutation request for parcel ID: {}", request.getParcelId());
         request.setStatus("PENDING");
         
         // Cap nhat trang thai thua dat sang IN_MUTATION
-        LandParcelEntity parcel = landParcelJpaRepository.findById(request.getParcelId())
-                .orElseThrow(() -> new RuntimeException("Land parcel not found with ID " + request.getParcelId()));
+        if (!landParcelJpaRepository.existsById(request.getParcelId())) {
+                throw new RuntimeException("Land parcel not found with ID " + request.getParcelId());
+        }
         
         // Gia su co truong status trong LandParcelEntity. Neu khong co ta se bo qua buoc nay hoac cap nhat notes
         log.info("Changing land parcel {} status to IN_MUTATION", request.getParcelId());

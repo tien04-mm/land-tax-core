@@ -123,8 +123,8 @@ public class TaxController {
      * D nh cho cAng dan tra cou to khai coa chAnh minh.
      */
     @Operation(summary = "Xem lich so to khai", description = "Nguoi dan xem lich so cac to khai dA nop")
-    @ApiResponse(responseCode = "200", description = "Lay lich so th nh cAng")
-    @GetMapping("/declarations/my-history")
+    @ApiResponse(responseCode = "200", description = "Lay lich su thanh cong")
+    @GetMapping({"/declarations/my-history", "/declarations/history"})
     @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<List<TaxDeclarationResponse>> getMyHistory() {
         String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()

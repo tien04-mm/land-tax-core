@@ -13,6 +13,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class LandParcelService {
 
     private final LandParcelJpaRepository landParcelJpaRepository;
@@ -46,6 +47,9 @@ public class LandParcelService {
 
     @Transactional
     public LandParcelEntity updateParcel(Integer id, LandParcelEntity updatedEntity) {
+        if (updatedEntity == null) {
+            throw new IllegalArgumentException("Updated land parcel data cannot be null");
+        }
         log.info("Updating land parcel ID: {}", id);
         return landParcelJpaRepository.findById(id).map(existing -> {
             if (updatedEntity.getAddress() != null) {

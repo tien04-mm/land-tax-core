@@ -19,4 +19,7 @@ public interface TaxPaymentJpaRepository extends JpaRepository<TaxPaymentEntity,
     Optional<TaxPaymentEntity> findByTransactionCode(String transactionCode);
 
     Optional<TaxPaymentEntity> findByLandParcelIdAndTaxYear(Integer landParcelId, Integer taxYear);
+
+    @org.springframework.data.jpa.repository.Query("SELECT SUM(p.totalAmountDue) FROM TaxPaymentEntity p WHERE p.paymentStatus = 'PAID' AND p.taxYear = :year")
+    java.math.BigDecimal sumPaidAmountByYear(int year);
 }

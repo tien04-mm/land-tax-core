@@ -3,12 +3,8 @@ package com.thanglong.landtax.infrastructure.adapter.controller;
 import com.thanglong.landtax.usecase.service.StatisticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,6 +26,8 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AuditLogE
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 @SuppressWarnings("null")
+@Slf4j
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     private final StatisticsService statisticsService;
@@ -43,18 +41,24 @@ public class AdminController {
     private String internalSecret;
 
     /**
-     * API Thong kA tong quan cho Dashboard.
-     * YAu cau quyon ADMIN hoac TAX_OFFICER.
+     * API Thong ke tong quan cho Dashboard.
      */
-    @GetMapping("/statistics")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TAX_OFFICER')")
+    @GetMapping("/statistics/dashboard")
     public ResponseEntity<Map<String, Object>> getDashboardStatistics() {
+        log.info("AdminController.getDashboardStatistics() hit");
         Map<String, Object> stats = statisticsService.getDashboardStatistics();
         return ResponseEntity.ok(stats);
     }
 
+    /**
+     * GET /api/admin/users - Danh sach nguoi dung.
+     */
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers() {
+        return ResponseEntity.ok(citizenLocalJpaRepository.findAll());
+    }
+
     @PutMapping("/users/{cccd}/status")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateUserStatus(@PathVariable String cccd, @RequestParam boolean active) {
         var citizenOpt = citizenLocalJpaRepository.findByCccdNumber(cccd);
         if (citizenOpt.isPresent()) {
@@ -70,16 +74,15 @@ public class AdminController {
         try {
             vneidServiceClient.updateCitizenStatus(cccd, active, internalSecret);
         } catch (Exception e) {
-            // Ignore if vneid is not reachable in local dev
+            log.warn("Failed to sync status to VNeID: {}", e.getMessage());
         }
         
         auditLogService.log("UPDATE_USER_STATUS", "ACCOUNT", cccd, "Cap nhat trang thai active = " + active);
 
-        return ResponseEntity.ok(Map.of("message", "Cap nhat trang thai nguoi dAng th nh cAng"));
+        return ResponseEntity.ok(Map.of("message", "Cap nhat trang thai nguoi dung thanh cong"));
     }
 
     @PutMapping("/users/{cccd}/role")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateUserRole(@PathVariable String cccd, @RequestParam String role) {
         Integer roleId = switch (role) {
             case "ROLE_ADMIN" -> 1;
@@ -102,28 +105,25 @@ public class AdminController {
         try {
             vneidServiceClient.updateCitizenRole(cccd, role, internalSecret);
         } catch (Exception e) {
-            // Ignore if vneid is not reachable in local dev
+            log.warn("Failed to sync role to VNeID: {}", e.getMessage());
         }
 
         auditLogService.log("UPDATE_USER_ROLE", "ACCOUNT", cccd, "Cap nhat role = " + role);
 
-        return ResponseEntity.ok(Map.of("message", "Cap nhat role nguoi dAng th nh cAng"));
+        return ResponseEntity.ok(Map.of("message", "Cap nhat role nguoi dung thanh cong"));
     }
 
     /**
      * GET /api/admin/audit-logs - Xem nhat ky he thong (Audit Trail).
-     * YAu cau quyon ROLE_ADMIN.
      */
     @GetMapping("/audit-logs")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAuditLogs(
             @RequestParam(required = false) String userCccd,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate) {
         
-        List<AuditLogEntity> logs = 
-            auditLogJpaRepository.findWithFilters(userCccd, action, fromDate, toDate);
+        List<AuditLogEntity> logs = auditLogJpaRepository.findWithFilters(userCccd, action, fromDate, toDate);
 
         return ResponseEntity.ok(Map.of(
             "total", logs.size(),
@@ -131,4 +131,3 @@ public class AdminController {
         ));
     }
 }
-

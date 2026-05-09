@@ -65,4 +65,9 @@ public class ProfileService {
 
         return citizenLocalJpaRepository.save(citizen);
     }
+
+    public CitizenLocalEntity getProfile(String cccdNumber) {
+        return citizenLocalJpaRepository.findByCccdNumber(cccdNumber)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay profile cho CCCD: " + cccdNumber));
+    }
 }

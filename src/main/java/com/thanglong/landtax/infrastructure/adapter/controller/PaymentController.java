@@ -22,6 +22,7 @@ public class PaymentController {
 
     private final CreatePaymentLinkUseCase createPaymentLinkUseCase;
     private final com.thanglong.landtax.usecase.service.PdfReceiptService pdfReceiptService;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxPaymentJpaRepository taxPaymentJpaRepository;
 
     /**
      * Tao link thanh toan cho mot khoan thue.
@@ -35,6 +36,16 @@ public class PaymentController {
     public ResponseEntity<Map<String, Object>> createPaymentLink(@PathVariable Integer payId) {
         Map<String, Object> result = createPaymentLinkUseCase.createPaymentLink(payId);
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Lay danh sach hoa don chua thanh toan.
+     */
+    @GetMapping("/unpaid")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<?> getUnpaidPayments() {
+        // Simple mock for smoke test if needed, or real fetch
+        return ResponseEntity.ok(taxPaymentJpaRepository.findByPaymentStatus("UNPAID")); 
     }
 
     /**

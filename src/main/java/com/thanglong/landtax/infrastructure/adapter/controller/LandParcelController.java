@@ -25,16 +25,13 @@ public class LandParcelController {
     private final LandParcelService landParcelService;
     private final LandParcelImportService landParcelImportService;
 
-    @GetMapping("/my-assets")
+    @GetMapping("/my-parcels")
     @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<?> getMyLandParcels() {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
         log.info("GET /api/land-parcels/my-assets  owner_cccd={}", cccd);
         List<LandParcelEntity> myParcels = landParcelService.getMyLandParcels(cccd);
-        return ResponseEntity.ok(Map.of(
-                "data", myParcels,
-                "message", "Lay danh sach thua dat thanh cong"
-        ));
+        return ResponseEntity.ok(myParcels);
     }
 
     @PostMapping(value = "/import", consumes = "multipart/form-data")
@@ -119,7 +116,7 @@ public class LandParcelController {
     public ResponseEntity<?> createParcel(@RequestBody LandParcelEntity entity) {
         log.info("Tao moi thua dat: {}", entity.getParcelNumber());
         LandParcelEntity created = landParcelService.createParcel(entity);
-        return ResponseEntity.ok(Map.of("data", created, "message", "Tao thua dat thanh cong"));
+        return ResponseEntity.ok(created);
     }
 
     @PutMapping("/{id}")

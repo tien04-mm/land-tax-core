@@ -21,7 +21,13 @@ public class ProfileController {
     public ResponseEntity<?> syncProfile() {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
         com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity profile = profileService.syncProfileFromVneid(cccd);
-        return ResponseEntity.ok(Map.of("message", "ong bo ho so th nh cAng", "profile", profile));
+        return ResponseEntity.ok(Map.of("message", "Dong bo ho so thanh cong", "profile", profile));
+    }
+
+    @org.springframework.web.bind.annotation.GetMapping
+    public ResponseEntity<?> getProfile() {
+        String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(profileService.getProfile(cccd));
     }
 }
 

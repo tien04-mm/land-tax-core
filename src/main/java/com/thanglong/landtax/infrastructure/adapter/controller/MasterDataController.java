@@ -27,6 +27,7 @@ import java.util.Map;
 @RequestMapping("/api/master-data")
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class MasterDataController {
 
     private final AreaJpaRepository areaJpaRepository;
@@ -100,10 +101,18 @@ public class MasterDataController {
     public ResponseEntity<?> createLandType(@RequestBody Map<String, Object> req) {
         log.info("POST /api/master-data/land-types  body={}", req);
 
+        if (req == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Request body is required"));
+        }
+
+        String typeCode = (String) req.getOrDefault("typeCode", "");
+        String typeName = (String) req.getOrDefault("typeName", "");
+        Boolean isTaxPayment = (Boolean) req.getOrDefault("isTaxPayment", false);
+
         LandTypeEntity entity = LandTypeEntity.builder()
-                .typeCode((String) req.get("typeCode"))
-                .typeName((String) req.get("typeName"))
-                .isTaxPayment((Boolean) req.get("isTaxPayment"))
+                .typeCode(typeCode)
+                .typeName(typeName)
+                .isTaxPayment(isTaxPayment)
                 .build();
 
         LandTypeEntity saved = landTypeJpaRepository.save(entity);
