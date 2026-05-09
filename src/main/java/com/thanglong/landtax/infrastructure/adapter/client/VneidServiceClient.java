@@ -9,13 +9,13 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * OpenFeign client để gọi sang VNeID Auth Service (Port 9090).
+ * OpenFeign client de goi sang VNeID Auth Service (Port 9090).
  */
 @FeignClient(name = "vneid-auth-service", url = "${vneid.service.url}")
 public interface VneidServiceClient {
 
     /**
-     * Lấy thông tin định danh công dân từ VNeID theo số CCCD.
+     * Lay thong tin dinh danh cong dan tu VNeID theo so CCCD.
      */
     @GetMapping("/api/vneid/internal/citizens/{cccd}")
     ApiResponse<CitizenIdentityDTO> getCitizenByCccd(
@@ -35,13 +35,13 @@ public interface VneidServiceClient {
             @RequestHeader("X-Internal-Secret") String secret);
 
     /**
-     * Kiểm tra trạng thái mã QR từ VNeID Auth Service.
+     * Kiem tra trang thai ma QR tu VNeID Auth Service.
      */
     @GetMapping("/api/auth/qr-status")
     ApiResponse<VneidQrStatusResponse> getQrStatus(@RequestParam("token") String qrToken);
 
     /**
-     * Handshake cuối cùng: Đăng nhập QR tại VNeID để lấy CCCD.
+     * Handshake cuoi cung: Dang nhap QR tai VNeID de lay CCCD.
      */
     @PostMapping("/api/auth/qr-login")
     ApiResponse<VneidAuthResponse> loginByQr(@RequestBody AuthRequest.QrLoginRequest request);

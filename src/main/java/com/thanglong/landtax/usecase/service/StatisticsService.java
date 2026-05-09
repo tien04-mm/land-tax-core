@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Service xử lý thống kê, báo cáo Dashboard cho Admin.
+ * Service xu ly thong ke, bao cao Dashboard cho Admin.
  */
 @Service
 @RequiredArgsConstructor
@@ -27,14 +27,14 @@ public class StatisticsService {
     private final RecordJpaRepository recordJpaRepository;
 
     /**
-     * Lấy các chỉ số thống kê tổng quan cho Dashboard.
+     * Lay cac chi so thong ke tong quan cho Dashboard.
      *
-     * @return Map chứa các chỉ số thống kê
+     * @return Map chua cac chi so thong ke
      */
     public Map<String, Object> getDashboardStatistics() {
         Map<String, Object> stats = new HashMap<>();
 
-        // 1. Tổng số tiền thuế đã thu trong năm
+        // 1. Tong so tien thue da thu trong nam
         int currentYear = LocalDate.now().getYear();
         List<TaxPaymentEntity> allPayments = taxPaymentJpaRepository.findAll();
         
@@ -45,7 +45,7 @@ public class StatisticsService {
         
         stats.put("totalTaxCollectedCurrentYear", totalCollected);
 
-        // 2. Tình trạng hồ sơ (Records)
+        // 2. Tinh trang ho so (Records)
         List<RecordEntity> allRecords = recordJpaRepository.findAll();
         
         long pendingRecords = allRecords.stream()
@@ -58,7 +58,7 @@ public class StatisticsService {
                 .count();
         stats.put("warningFraudRecordsCount", fraudWarningRecords);
 
-        // 3. Danh sách các thửa đất nợ thuế quá hạn
+        // 3. Danh sach cac thua dat no thue qua han
         LocalDate now = LocalDate.now();
         List<Map<String, Object>> overdueParcels = allPayments.stream()
                 .filter(p -> "UNPAID".equals(p.getPaymentStatus()) || "AWAITING_PAYMENT".equals(p.getPaymentStatus()))

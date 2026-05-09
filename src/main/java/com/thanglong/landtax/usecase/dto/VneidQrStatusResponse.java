@@ -3,7 +3,7 @@ package com.thanglong.landtax.usecase.dto;
 import lombok.*;
 
 /**
- * DTO nhận trạng thái QR từ VNeID Auth Service.
+ * DTO nhan trang thai QR tu VNeID Auth Service.
  */
 @Getter
 @Setter

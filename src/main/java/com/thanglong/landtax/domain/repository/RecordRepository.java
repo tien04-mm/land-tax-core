@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Interface repository cho Record (Hồ sơ/Biên bản).
+ * Interface repository cho Record (Ho so/Bien ban).
  */
 public interface RecordRepository {
 

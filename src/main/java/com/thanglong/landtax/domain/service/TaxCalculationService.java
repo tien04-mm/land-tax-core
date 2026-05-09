@@ -14,16 +14,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Domain service xử lý logic tính toán thuế đất.
+ * Domain service xo ly logic tAnh toan thua dat.
  *
- * <p><b>Công thức tính thuế:</b></p>
+ * <p><b>CAng thoc tAnh thua:</b></p>
  * <pre>
- *   Tiền thuế = Diện tích (m²) × Đơn giá đất (VNĐ/m²) × Thuế suất
+ *   Tion thua = Dien tAch (mo) A on gia dat (VN/mo) A Thua suat
  * </pre>
  *
- * <p><b>Tra cứu dữ liệu:</b></p>
+ * <p><b>Tra cou du lieu:</b></p>
  * <ul>
- *   <li>Đơn giá đất: từ bảng land_prices dựa trên land_type_id + area_id của thửa đất</li>
+ *   <li>on gia dat: tu bang land_prices doa trAn land_type_id + area_id coa thoa dat</li>
  * </ul>
  */
 @Service
@@ -38,55 +38,55 @@ public class TaxCalculationService {
     private final TaxExemptSubjectJpaRepository taxExemptSubjectJpaRepository;
 
     /**
-     * Tính thuế đất cho một thửa đất cụ thể.
+     * TAnh thua dat cho mot thoa dat co the.
      *
-     * @param parcelId  ID thửa đất trong bảng land_parcels
-     * @param citizenId ID của công dân để kiểm tra miễn giảm
-     * @param year      Năm tính thuế
-     * @return Kết quả tính thuế bao gồm số tiền, đơn giá, mức miễn giảm
-     * @throws RuntimeException nếu không tìm thấy thửa đất, đơn giá
+     * @param parcelId  ID thoa dat trong bang land_parcels
+     * @param citizenId ID coa cAng dan de kiem tra mien giam
+     * @param year      Nm tAnh thua
+     * @return Kat qua tAnh thua bao gom so tion, don gia, moc mien giam
+     * @throws RuntimeException nau khAng tim thay thoa dat, don gia
      */
     public TaxCalculationResult calculateTax(Integer parcelId, Integer citizenId, Integer year) {
-        // ===== 1. Tìm thông tin thửa đất =====
+        // ===== 1. Tim thAng tin thoa dat =====
         LandParcelEntity parcel = landParcelJpaRepository.findById(parcelId)
-                .orElseThrow(() -> new RuntimeException("Thửa đất không tồn tại: " + parcelId));
+                .orElseThrow(() -> new RuntimeException("Thoa dat khAng ton tai: " + parcelId));
 
         BigDecimal actualArea = parcel.getAreaSize();
 
-        // ===== 2. Tìm đơn giá đất theo loại đất + khu vực =====
+        // ===== 2. Tim don gia dat theo loai dat + khu voc =====
         LandPriceEntity landPrice = landPriceJpaRepository
                 .findLatestPrice(parcel.getLandTypeId(), parcel.getAreaId())
                 .orElseThrow(() -> new RuntimeException(
-                        String.format("Không tìm thấy đơn giá đất cho landTypeId=%d, areaId=%d",
+                        String.format("KhAng tim thay don gia dat cho landTypeId=%d, areaId=%d",
                                 parcel.getLandTypeId(), parcel.getAreaId())));
 
-        // ===== 3. Kiểm tra miễn giảm =====
+        // ===== 3. Kiem tra mien giam =====
         BigDecimal exemptionRate = BigDecimal.ZERO;
         java.util.List<TaxExemptSubjectEntity> exemptions = 
                 taxExemptSubjectJpaRepository.findByCitizenId(citizenId);
         
         if (!exemptions.isEmpty()) {
-            // Lấy mức miễn giảm cao nhất nếu có nhiều record
+            // Lay moc mien giam cao nhat nau co nhiou record
             exemptionRate = exemptions.stream()
                     .map(TaxExemptSubjectEntity::getDiscountRate)
                     .max(BigDecimal::compareTo)
                     .orElse(BigDecimal.ZERO);
         }
 
-        // ===== 4. Tính tiền thuế =====
-        // Tiền thuế = Diện tích × Đơn giá × (1 - Exemption Rate)
+        // ===== 4. TAnh tion thua =====
+        // Tion thua = Dien tAch A on gia A (1 - Exemption Rate)
         BigDecimal unitPrice = landPrice.getUnitPrice();
         
         BigDecimal rateMultiplier = BigDecimal.ONE.subtract(exemptionRate);
-        if (rateMultiplier.compareTo(BigDecimal.ZERO) < 0) rateMultiplier = BigDecimal.ZERO; // Không thể âm
+        if (rateMultiplier.compareTo(BigDecimal.ZERO) < 0) rateMultiplier = BigDecimal.ZERO; // KhAng the am
 
         BigDecimal taxAmount = actualArea
                 .multiply(unitPrice)
                 .multiply(rateMultiplier)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        log.info("Tax calculated for parcel {}: area={} m², unitPrice={} VNĐ/m², " +
-                        "exemptionRate={}, tax={} VNĐ, year={}",
+        log.info("Tax calculated for parcel {}: area={} mo, unitPrice={} VN/mo, " +
+                        "exemptionRate={}, tax={} VN, year={}",
                 parcelId, actualArea, unitPrice, exemptionRate, taxAmount, year);
 
         return TaxCalculationResult.builder()
@@ -97,7 +97,7 @@ public class TaxCalculationService {
                 .build();
     }
 
-    // ===== Inner classes cho kết quả =====
+    // ===== Inner classes cho kat qua =====
 
     @lombok.Builder
     @lombok.Getter
@@ -108,3 +108,4 @@ public class TaxCalculationService {
         private final BigDecimal actualArea;
     }
 }
+

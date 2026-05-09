@@ -25,7 +25,7 @@ public class ExemptionController {
             TaxExemptSubjectEntity exemption = exemptionService.createExemption(uploaderCccd, request);
             return ResponseEntity.ok(Map.of(
                     "data", exemption,
-                    "message", "Cập nhật danh sách miễn giảm thành công"
+                    "message", "Cap nhat danh sach mien giam thanh cong"
             ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

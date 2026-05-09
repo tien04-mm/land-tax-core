@@ -45,9 +45,9 @@ gemini:
 
 # PayOS Configuration
 payos:
-  client-id: e007b95d-45b9-4916-bf47-404c4f6c7807
-  api-key: 1ab4a6a8-795b-4edd-b280-5d7a9269d553
-  checksum-key: 62664100d5321347ef3db07a32f59f06c2f20279b495bba97c40f0f5d0a57128
+  client-id: "e007b95d-45b9-4916-bf47-404c4f6c7807"
+  api-key: "1ab4a6a8-795b-4edd-b280-5d7a9269d553"
+  checksum-key: 731809ff42999f81c86efea0ac37b1b4a518241767a512543006e9475ed57d6c
   # Hai URL này phải là địa chỉ Front-end (của người dân dùng)
   return-url: http://localhost:3000/payment/success
   cancel-url: http://localhost:3000/payment/cancel
@@ -66,3 +66,4 @@ servlet:
       enabled: true
       max-file-size: 20MB            # Giới hạn kích thước mỗi file
       max-request-size: 50MB          # Giới hạn kích thước toàn bộ request
+ 

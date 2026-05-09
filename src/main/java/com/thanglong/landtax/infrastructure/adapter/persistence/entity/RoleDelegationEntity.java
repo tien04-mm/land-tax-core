@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * JPA Entity mapping với bảng role_delegations trong CSDL.
+ * JPA Entity mapping voi bang role_delegations trong CSDL.
  */
 @Entity
 @Table(name = "role_delegations")

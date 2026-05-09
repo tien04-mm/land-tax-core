@@ -21,7 +21,7 @@ public class AuditLogService {
     private final AuditLogJpaRepository auditLogRepository;
 
     /**
-     * Ghi nhật ký thao tác (Audit Trail)
+     * Ghi nh t k  thao t c (Audit Trail)
      */
     public void log(String action, String targetType, String targetId, String description) {
         try {
@@ -48,10 +48,11 @@ public class AuditLogService {
                     .build();
 
             auditLogRepository.save(logEntity);
-            log.info("[AUDIT] {} - {} trên {} {}: {}", cccd, action, targetType, targetId, description);
+            log.info("[AUDIT] {} - {} tr n {} {}: {}", cccd, action, targetType, targetId, description);
 
         } catch (Exception e) {
-            log.error("Lỗi khi ghi audit log thủ công: {}", e.getMessage());
+            log.error("L i khi ghi audit log th  c ng: {}", e.getMessage());
         }
     }
 }
+

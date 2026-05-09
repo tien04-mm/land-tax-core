@@ -13,11 +13,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Persistence Adapter — cầu nối giữa domain interface {@link TaxRecordRepository}
- * và Spring Data JPA {@link TaxRecordJpaRepository}.
+ * Persistence Adapter - cau noi giua domain interface {@link TaxRecordRepository}
+ * v  Spring Data JPA {@link TaxRecordJpaRepository}.
  *
- * <p>Tuân thủ kiến trúc Hexagonal: domain layer không phụ thuộc vào JPA.
- * Spring Boot sẽ inject bean này khi bất kỳ use case nào yêu cầu
+ * <p>Tuan tho kian truc Hexagonal: domain layer khAng pho thuoc v o JPA.
+ * Spring Boot se inject bean n y khi bat ky use case n o yAu cau
  * {@code TaxRecordRepository}.</p>
  */
 @Component
@@ -111,3 +111,4 @@ public class TaxRecordPersistenceAdapter implements TaxRecordRepository {
         log.debug("TaxRecord deleted: id={}", id);
     }
 }
+

@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * DTO phản hồi sau khi nộp tờ khai thuế đất.
+ * DTO phan hoi sau khi nop to khai thue dat.
  */
 @Getter
 @Setter
@@ -23,9 +23,9 @@ public class TaxDeclarationResponse {
     private BigDecimal actualArea;
     private String declaredPurpose;
     private String status;                      // PENDING, WARNING_FRAUD
-    private String reviewNote;                  // Ghi chú cảnh báo gian lận
-    private BigDecimal calculatedTaxAmount;     // Số tiền thuế tính được
-    private BigDecimal unitPrice;               // Đơn giá đất áp dụng
-    private BigDecimal taxRate;                 // Thuế suất áp dụng
+    private String reviewNote;                  // Ghi chu canh bao gian lan
+    private BigDecimal calculatedTaxAmount;     // So tien thue tinh duoc
+    private BigDecimal unitPrice;               // Don gia dat ap dung
+    private BigDecimal taxRate;                 // Thue suat ap dung
     private LocalDateTime submittedAt;
 }

@@ -17,7 +17,7 @@ public class JwtProvider {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration:86400000}") // Mặc định 24h
+    @Value("${jwt.expiration:86400000}") // Mac dinh 24h
     private long jwtExpiration;
 
     private SecretKey secretKey;
@@ -34,9 +34,9 @@ public class JwtProvider {
         return Jwts.builder()
                 .subject(cccdNumber)
                 .claim("email", email)
-                .claim("role", activeRole)      // Claim cũ để tương thích ngược
-                .claim("activeRole", activeRole) // Vai trò hiện tại
-                .claim("roles", roles)           // Danh sách tất cả vai trò
+                .claim("role", activeRole)      // Claim cu de tuong thich nguoc
+                .claim("activeRole", activeRole) // Vai tro hien tai
+                .claim("roles", roles)           // Danh sach tat ca vai tro
                 .claim("citizenId", citizenId)
                 .issuedAt(now)
                 .expiration(expiryDate)

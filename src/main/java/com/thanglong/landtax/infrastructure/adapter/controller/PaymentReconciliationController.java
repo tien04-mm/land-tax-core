@@ -19,14 +19,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Controller cho Module Đối soát thanh toán và Xuất báo cáo.
+ * Controller cho Module Doi soat thanh toan va Xuat bao cao.
  *
  * <p><b>Endpoints:</b></p>
  * <ul>
- *   <li>POST /api/payments/reconcile/upload — Cán bộ tải file CSV sao kê ngân hàng</li>
- *   <li>GET  /api/payments/reconcile/discrepancies — Xem danh sách sai lệch</li>
- *   <li>PUT  /api/payments/bills/{id}/adjust — Điều chỉnh thủ công trạng thái hóa đơn</li>
- *   <li>GET  /api/admin/reports/export — Xuất báo cáo Excel</li>
+ *   <li>POST /api/payments/reconcile/upload  Can bo tai file CSV sao ke ngan hang</li>
+ *   <li>GET  /api/payments/reconcile/discrepancies  Xem danh sach sai lech</li>
+ *   <li>PUT  /api/payments/bills/{id}/adjust  Dieu chinh thu cong trang thai hoa don</li>
+ *   <li>GET  /api/admin/reports/export  Xuat bao cao Excel</li>
  * </ul>
  */
 @RestController
@@ -39,27 +39,24 @@ public class PaymentReconciliationController {
     private final TaxReportExportService taxReportExportService;
     private final TaxBillRepository taxBillRepository;
 
-    // ─────────────────────────────────────────────────────────────────
-    // 1. ĐỐI SOÁT SAO KÊ NGÂN HÀNG
-    // ─────────────────────────────────────────────────────────────────
+    // 
+    // 1. DOI SOAT SAO KE NGAN HANG
+    // 
 
     /**
-     * POST /api/payments/reconcile/upload — Upload file CSV sao kê ngân hàng.
-     * Chỉ TAX_OFFICER / ADMIN mới được phép.
+     * POST /api/payments/reconcile/upload  Upload file CSV sao ke ngan hang.
+     * Chi TAX_OFFICER / ADMIN moi duoc phep.
      */
     @PostMapping(value = "/api/payments/reconcile/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @AuditLog(action = "Upload sao kê ngân hàng")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'TAX_OFFICER')")
+    @AuditLog(action = "Upload sao ke ngan hang")
     public ResponseEntity<?> uploadReconciliationFile(@RequestParam("file") MultipartFile file) {
-        boolean isOfficer = isOfficer();
-        if (!isOfficer) {
-            return ResponseEntity.status(403).body(Map.of("error", "Chỉ cán bộ thuế mới được phép đối soát"));
-        }
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "File không được để trống"));
+            return ResponseEntity.badRequest().body(Map.of("error", "File khong duoc de trong"));
         }
         String filename = java.util.Optional.ofNullable(file.getOriginalFilename()).orElse("");
         if (!filename.toLowerCase().endsWith(".csv")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Chỉ chấp nhận file CSV (.csv)"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Chi chap nhan file CSV (.csv)"));
         }
 
         try {
@@ -68,58 +65,56 @@ public class PaymentReconciliationController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            log.error("Lỗi xử lý đối soát: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi xử lý file: " + e.getMessage()));
+            log.error("Loi xu ly doi soat: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Loi xu ly file: " + e.getMessage()));
         }
     }
 
     /**
-     * GET /api/payments/reconcile/discrepancies — Lấy danh sách sai lệch để xử lý thủ công.
+     * GET /api/payments/reconcile/discrepancies  Lay danh sach sai lech de xu ly thu cong.
      */
     @GetMapping("/api/payments/reconcile/discrepancies")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'TAX_OFFICER')")
     public ResponseEntity<List<ReconciliationStatementEntity>> getDiscrepancies() {
-        if (!isOfficer()) return ResponseEntity.status(403).build();
         return ResponseEntity.ok(reconciliationService.getDiscrepancies());
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // 2. XỬ LÝ SAI LỆCH — Điều chỉnh thủ công trạng thái hóa đơn
-    // ─────────────────────────────────────────────────────────────────
+    // 
+    // 2. XU LY SAI LECH  Dieu chinh thu cong trang thai hoa don
+    // 
 
     /**
-     * PUT /api/payments/bills/{id}/adjust — Cán bộ điều chỉnh trạng thái hóa đơn sau đối soát thủ công.
-     * Body: { "status": "PAID" | "UNPAID" | "WAIVED", "note": "Lý do điều chỉnh" }
+     * PUT /api/payments/bills/{id}/adjust  Can bo dieu chinh trang thai hoa don sau doi soat thu cong.
+     * Body: { "status": "PAID" | "UNPAID" | "WAIVED", "note": "Ly do dieu chinh" }
      */
     @PutMapping("/api/payments/bills/{id}/adjust")
-    @AuditLog(action = "Điều chỉnh trạng thái hóa đơn")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'TAX_OFFICER')")
+    @AuditLog(action = "Dieu chinh trang thai hoa don")
     public ResponseEntity<?> adjustBillStatus(@PathVariable Integer id, @RequestBody Map<String, String> body) {
-        if (!isOfficer()) {
-            return ResponseEntity.status(403).body(Map.of("error", "Chỉ cán bộ thuế mới được điều chỉnh hóa đơn"));
-        }
 
         String newStatus = body.get("status");
-        String note = body.getOrDefault("note", "Điều chỉnh thủ công sau đối soát");
+        String note = body.getOrDefault("note", "Dieu chinh thu cong sau doi soat");
 
         if (newStatus == null || newStatus.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Thiếu trường 'status'"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Thieu truong 'status'"));
         }
         if (!List.of("PAID", "UNPAID", "WAIVED", "DISCREPANCY").contains(newStatus)) {
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Giá trị status không hợp lệ. Chấp nhận: PAID, UNPAID, WAIVED, DISCREPANCY"));
+                    "error", "Gia tri status khong hop le. Chap nhan: PAID, UNPAID, WAIVED, DISCREPANCY"));
         }
 
         TaxBillEntity bill = taxBillRepository.findByBillId(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn ID: " + id));
+                .orElseThrow(() -> new RuntimeException("Khong tim thay hoa don ID: " + id));
 
         String oldStatus = bill.getStatus();
         bill.setStatus(newStatus);
-        bill.setDescription(java.util.Optional.ofNullable(bill.getDescription()).orElse("") + " | [Điều chỉnh] " + note);
+        bill.setDescription(java.util.Optional.ofNullable(bill.getDescription()).orElse("") + " | [Dieu chinh] " + note);
         taxBillRepository.save(bill);
 
-        log.info("Điều chỉnh hóa đơn billId={}: {} → {} | ghi chú: {}", id, oldStatus, newStatus, note);
+        log.info("Dieu chinh hoa don billId={}: {}  {} | ghi chu: {}", id, oldStatus, newStatus, note);
 
         return ResponseEntity.ok(Map.of(
-                "message", "Điều chỉnh trạng thái hóa đơn thành công",
+                "message", "Dieu chinh trang thai hoa don thanh cong",
                 "billId", id,
                 "oldStatus", oldStatus != null ? oldStatus : "",
                 "newStatus", newStatus,
@@ -127,22 +122,22 @@ public class PaymentReconciliationController {
         ));
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // 3. XUẤT BÁO CÁO EXCEL
-    // ─────────────────────────────────────────────────────────────────
+    // 
+    // 3. XUAT BAO CAO EXCEL
+    // 
 
     /**
-     * GET /api/admin/reports/export — Xuất báo cáo tình hình thu thuế khu vực ra file .xlsx.
+     * GET /api/admin/reports/export  Xuat bao cao tinh hinh thu thue khu vuc ra file .xlsx.
      *
      * <p>Query params:</p>
      * <ul>
-     *   <li>areaId (tùy chọn): Lọc theo khu vực</li>
-     *   <li>status (tùy chọn): PAID / UNPAID</li>
-     *   <li>year (tùy chọn): Năm báo cáo</li>
+     *   <li>areaId (tuy chon): Loc theo khu vuc</li>
+     *   <li>status (tuy chon): PAID / UNPAID</li>
+     *   <li>year (tuy chon): Nam bao cao</li>
      * </ul>
      */
     @GetMapping("/api/admin/reports/export")
-    @AuditLog(action = "Xuất báo cáo thu thuế")
+    @AuditLog(action = "Xuat bao cao thu thue")
     public ResponseEntity<byte[]> exportReport(
             @RequestParam(required = false) Integer areaId,
             @RequestParam(required = false) String status,
@@ -162,19 +157,19 @@ public class PaymentReconciliationController {
             headers.setContentDispositionFormData("attachment", filename);
             headers.setContentLength(excelBytes.length);
 
-            log.info("Xuất báo cáo Excel: areaId={}, status={}, year={}, size={}KB",
+            log.info("Xuat bao cao Excel: areaId={}, status={}, year={}, size={}KB",
                     areaId, status, year, excelBytes.length / 1024);
             return ResponseEntity.ok().headers(headers).body(excelBytes);
 
         } catch (Exception e) {
-            log.error("Lỗi xuất báo cáo Excel: {}", e.getMessage(), e);
+            log.error("Loi xuat bao cao Excel: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────
+    // 
     // Helper
-    // ─────────────────────────────────────────────────────────────────
+    // 
 
     private boolean isOfficer() {
         return org.springframework.security.core.context.SecurityContextHolder.getContext()

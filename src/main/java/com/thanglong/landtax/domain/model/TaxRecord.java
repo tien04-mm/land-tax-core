@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Domain model đại diện cho bản ghi thuế đất.
+ * Domain model dai dien cho ban ghi thue dat.
  */
 @Getter
 @Setter
@@ -19,9 +19,9 @@ public class TaxRecord {
     private Long landParcelId;
     private Long citizenId;
     private Integer taxYear;
-    private BigDecimal taxableArea;      // Diện tích chịu thuế
-    private BigDecimal taxRate;          // Thuế suất (%)
-    private BigDecimal taxAmount;        // Số tiền thuế
+    private BigDecimal taxableArea;      // Dien tich chiu thue
+    private BigDecimal taxRate;          // Thue suat (%)
+    private BigDecimal taxAmount;        // So tien thue
     private String status;              // PENDING, APPROVED, PAID, OVERDUE
     private String notes;
     private LocalDateTime declarationDate;

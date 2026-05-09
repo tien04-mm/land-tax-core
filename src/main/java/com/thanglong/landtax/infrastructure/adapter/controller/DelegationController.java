@@ -23,7 +23,7 @@ public class DelegationController {
             RoleDelegationEntity delegation = delegationService.delegateRole(request);
             return ResponseEntity.ok(Map.of(
                     "data", delegation,
-                    "message", "Ủy quyền thành công"
+                    "message", "Uy quyen thanh cong"
             ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

@@ -25,19 +25,19 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Use case xử lý TỪ CHỐI tờ khai thuế đất.
+ * Use case x  l  T  CH I t  khai thu   t.
  *
- * <p><b>Chỉ cho phép:</b> TAX_OFFICER hoặc ADMIN</p>
- * <p><b>Bắt buộc:</b> processor_notes (lý do từ chối) không được để trống</p>
+ * <p><b>Ch  cho ph p:</b> TAX_OFFICER ho c ADMIN</p>
+ * <p><b>B t bu c:</b> processor_notes (l  do t  ch i) kh ng  c   tr ng</p>
  *
- * <p><b>Hành động:</b></p>
+ * <p><b>H nh  ng:</b></p>
  * <ol>
- *   <li>Kiểm tra quyền (role) của người từ chối</li>
- *   <li>Validate processor_notes không được rỗng</li>
- *   <li>Cập nhật records.current_status → REJECTED</li>
- *   <li>Cập nhật tax_payments.payment_status → CANCELLED</li>
- *   <li>Ghi nhật ký vào processing_logs</li>
- *   <li>Gửi thông báo cho người dân kèm lý do từ chối</li>
+ *   <li>Ki m tra quy n (role) c a ng i t  ch i</li>
+ *   <li>Validate processor_notes kh ng  c r ng</li>
+ *   <li>C p nh t records.current_status   REJECTED</li>
+ *   <li>C p nh t tax_payments.payment_status   CANCELLED</li>
+ *   <li>Ghi nh t k  v o processing_logs</li>
+ *   <li>G i th ng b o cho ng i d n k m l  do t  ch i</li>
  * </ol>
  */
 @Service
@@ -55,30 +55,30 @@ public class RejectDeclarationUseCase {
     private final AuditLogService auditLogService;
     private final TaxDeclarationRepository taxDeclarationRepository;
 
-    /** Các role được phép từ chối tờ khai */
+    /** C c role  c ph p t  ch i t  khai */
     private static final Set<String> ALLOWED_ROLES = Set.of(
             "TAX_OFFICER", "ADMIN",
             "ROLE_TAX_OFFICER", "ROLE_ADMIN"
     );
 
     /**
-     * Từ chối tờ khai thuế.
+     * T  ch i t  khai thu .
      *
-     * @param recordId  ID tờ khai trong bảng records
-     * @param request   Lý do từ chối (processor_notes bắt buộc)
-     * @return Map chứa thông tin kết quả từ chối
+     * @param recordId  ID t  khai trong b ng records
+     * @param request   L  do t  ch i (processor_notes b t bu c)
+     * @return Map ch a th ng tin k t qu  t  ch i
      */
     @Transactional
     public Map<String, Object> rejectDeclaration(Integer recordId, ReviewDeclarationRequest request) {
 
-        // ===== BƯỚC 1: Validate lý do từ chối =====
+        // ===== B C 1: Validate l  do t  ch i =====
         if (request == null || request.getProcessorNotes() == null
                 || request.getProcessorNotes().isBlank()) {
             throw new RuntimeException(
-                    "Lý do từ chối (processor_notes) là bắt buộc khi từ chối tờ khai");
+                    "L  do t  ch i (processor_notes) l  b t bu c khi t  ch i t  khai");
         }
 
-        // ===== BƯỚC 2: Kiểm tra quyền =====
+        // ===== B C 2: Ki m tra quy n =====
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         validateOfficerRole(auth);
 
@@ -87,24 +87,24 @@ public class RejectDeclarationUseCase {
 
         AccountEntity officerAccount = accountJpaRepository.findByCitizenId(officerCitizenId)
                 .orElseThrow(() -> new RuntimeException(
-                        "Không tìm thấy tài khoản cán bộ cho citizenId: " + officerCitizenId));
+                        "Kh ng t m th y t i kho n c n b  cho citizenId: " + officerCitizenId));
 
-        // ===== BƯỚC 3: Tìm và kiểm tra tờ khai =====
+        // ===== B C 3: T m v  ki m tra t  khai =====
         RecordEntity record = recordJpaRepository.findById(recordId)
-                .orElseThrow(() -> new RuntimeException("Tờ khai không tồn tại: " + recordId));
+                .orElseThrow(() -> new RuntimeException("T  khai kh ng t n t i: " + recordId));
 
         String oldStatus = record.getCurrentStatus();
 
         if ("REJECTED".equals(oldStatus) || "APPROVED".equals(oldStatus)) {
             throw new RuntimeException(
-                    "Không thể từ chối tờ khai đã ở trạng thái: " + oldStatus);
+                    "Kh ng th  t  ch i t  khai     tr ng th i: " + oldStatus);
         }
 
-        // ===== BƯỚC 4: Cập nhật records → REJECTED =====
+        // ===== B C 4: C p nh t records   REJECTED =====
         record.setCurrentStatus("REJECTED");
         recordJpaRepository.save(record);
 
-        // Cập nhật TaxDeclarationEntity
+        // C p nh t TaxDeclarationEntity
         List<TaxDeclarationEntity> declarations = taxDeclarationRepository
                 .findByCitizenIdAndParcelIdAndStatus(record.getCitizenId(), record.getLandParcelId(), oldStatus);
 
@@ -113,21 +113,21 @@ public class RejectDeclarationUseCase {
             declaration.setStatus("REJECTED");
             declaration.setReviewNote(request.getProcessorNotes());
             taxDeclarationRepository.save(declaration);
-            log.info("Đã cập nhật trạng thái tờ khai {} sang REJECTED", declaration.getId());
+            log.info("  c p nh t tr ng th i t  khai {} sang REJECTED", declaration.getId());
         }
 
-        log.info("Record {} status updated: {} → REJECTED", recordId, oldStatus);
+        log.info("Record {} status updated: {}   REJECTED", recordId, oldStatus);
 
-        // ===== BƯỚC 5: Cập nhật tax_payments → CANCELLED =====
+        // ===== B C 5: C p nh t tax_payments   CANCELLED =====
         List<TaxPaymentEntity> payments = taxPaymentJpaRepository.findByRecordId(recordId);
         for (TaxPaymentEntity payment : payments) {
             payment.setPaymentStatus("CANCELLED");
             taxPaymentJpaRepository.save(payment);
 
-            log.info("Payment {} status updated → CANCELLED", payment.getPayId());
+            log.info("Payment {} status updated   CANCELLED", payment.getPayId());
         }
 
-        // ===== BƯỚC 6: Ghi nhật ký processing_logs =====
+        // ===== B C 6: Ghi nh t k  processing_logs =====
         ProcessingLogEntity processingLog = ProcessingLogEntity.builder()
                 .recordId(recordId)
                 .processorAccountId(officerAccount.getAccountId())
@@ -142,12 +142,12 @@ public class RejectDeclarationUseCase {
         log.info("Processing log created for record {}: REJECT by account {}, reason: '{}'",
                 recordId, officerAccount.getAccountId(), request.getProcessorNotes());
 
-        // ===== BƯỚC 7: Gửi thông báo cho người dân kèm lý do =====
+        // ===== B C 7: G i th ng b o cho ng i d n k m l  do =====
         notificationService.notifyDeclarationRejected(
                 record.getCitizenId(), recordId, request.getProcessorNotes());
 
-        // ===== BƯỚC 8: Ghi Audit Log =====
-        auditLogService.log("REJECT_DECLARATION", "TAX_DECLARATION", String.valueOf(recordId), "Cán bộ thuế " + cccdNumber + " đã từ chối hồ sơ " + recordId + ". Lý do: " + request.getProcessorNotes());
+        // ===== B C 8: Ghi Audit Log =====
+        auditLogService.log("REJECT_DECLARATION", "TAX_DECLARATION", String.valueOf(recordId), "C n b  thu  " + cccdNumber + "   t  ch i h  s  " + recordId + ". L  do: " + request.getProcessorNotes());
 
         return Map.of(
                 "recordId", recordId,
@@ -155,16 +155,16 @@ public class RejectDeclarationUseCase {
                 "newStatus", "REJECTED",
                 "reason", request.getProcessorNotes(),
                 "rejectedBy", cccdNumber,
-                "message", "Tờ khai mã #" + recordId + " đã bị từ chối"
+                "message", "T  khai m  #" + recordId + "   b  t  ch i"
         );
     }
 
     /**
-     * Kiểm tra người dùng hiện tại có quyền từ chối hay không.
+     * Ki m tra ng i d ng hi n t i c  quy n t  ch i hay kh ng.
      */
     private void validateOfficerRole(Authentication auth) {
         if (auth == null || auth.getAuthorities() == null) {
-            throw new RuntimeException("Không có thông tin xác thực");
+            throw new RuntimeException("Kh ng c  th ng tin x c th c");
         }
 
         boolean hasPermission = auth.getAuthorities().stream()
@@ -174,7 +174,8 @@ public class RejectDeclarationUseCase {
         if (!hasPermission) {
             log.warn("Unauthorized reject attempt by: {}", auth.getName());
             throw new RuntimeException(
-                    "Bạn không có quyền từ chối tờ khai. Yêu cầu vai trò: TAX_OFFICER hoặc ADMIN");
+                    "B n kh ng c  quy n t  ch i t  khai. Y u c u vai tr : TAX_OFFICER ho c ADMIN");
         }
     }
 }
+

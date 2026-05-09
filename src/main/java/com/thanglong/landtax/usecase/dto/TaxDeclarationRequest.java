@@ -6,8 +6,7 @@ import lombok.*;
 import java.util.List;
 
 /**
- * DTO cho yêu cầu nộp tờ khai thuế đất.
- * Người dân chỉ cần cung cấp parcelId và danh sách các attachmentIds.
+ * DTO cho yeu cau nop to khai thue dat.
  */
 @Getter
 @Setter
@@ -16,11 +15,14 @@ import java.util.List;
 @Builder
 public class TaxDeclarationRequest {
 
-    @NotNull(message = "Mã thửa đất không được để trống")
+    @NotNull(message = "Ma thua dat khong duoc de trong")
     private Integer parcelId;
 
+    @NotNull(message = "Dien tich khai bao khong duoc de trong")
+    private java.math.BigDecimal declaredArea;
+
     /**
-     * Danh sách ID tài liệu đính kèm đã upload.
+     * Danh sach ID tai lieu dinh kem da upload.
      */
     private List<Long> attachmentIds;
 }

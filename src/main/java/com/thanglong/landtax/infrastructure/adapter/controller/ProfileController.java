@@ -21,6 +21,7 @@ public class ProfileController {
     public ResponseEntity<?> syncProfile() {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
         com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity profile = profileService.syncProfileFromVneid(cccd);
-        return ResponseEntity.ok(Map.of("message", "Đồng bộ hồ sơ thành công", "profile", profile));
+        return ResponseEntity.ok(Map.of("message", "ong bo ho so th nh cAng", "profile", profile));
     }
 }
+

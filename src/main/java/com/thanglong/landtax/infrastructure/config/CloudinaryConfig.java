@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Cấu hình Cloudinary.
+ * Cau hinh Cloudinary.
  */
 @Configuration
 public class CloudinaryConfig {

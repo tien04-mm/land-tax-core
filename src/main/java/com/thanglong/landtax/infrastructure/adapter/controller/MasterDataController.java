@@ -7,20 +7,21 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandTypeJpaR
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Master Data Controller – cung cấp dữ liệu nền cho Frontend.
+ * Master Data Controller  cung cap du lieu nen cho Frontend.
  *
  * <ul>
- *   <li>GET /api/master-data/areas      – Danh sách Quận/Huyện/Khu vực</li>
- *   <li>GET /api/master-data/land-types – Danh sách Loại đất (dùng cho Combobox)</li>
+ *   <li>GET /api/master-data/areas       Danh sach Quan/Huyen/Khu vuc</li>
+ *   <li>GET /api/master-data/land-types  Danh sach Loai dat (dung cho Combobox)</li>
  * </ul>
  *
- * <p>Các endpoint này KHÔNG yêu cầu xác thực để Frontend có thể gọi khi render form.</p>
+ * <p>Cac endpoint nay KHONG yeu cau xac thuc de Frontend co the goi khi render form.</p>
  */
 @RestController
 @RequestMapping("/api/master-data")
@@ -31,21 +32,21 @@ public class MasterDataController {
     private final AreaJpaRepository areaJpaRepository;
     private final LandTypeJpaRepository landTypeJpaRepository;
 
-    // ──────────────────────────────────────────────────────────────────
+    // 
     // GET /api/master-data/areas
-    // ──────────────────────────────────────────────────────────────────
+    // 
 
     /**
-     * Trả về toàn bộ danh sách Khu vực (areas) từ DB.
-     * Frontend dùng để hiển thị Combobox chọn Quận/Huyện.
+     * Tra ve toan bo danh sach Khu vuc (areas) tu DB.
+     * Frontend dung de hien thi Combobox chon Quan/Huyen.
      *
-     * @param districtCode (tuỳ chọn) lọc theo mã quận/huyện
+     * @param districtCode (tuy chon) loc theo ma quan/huyen
      */
     @GetMapping("/areas")
     public ResponseEntity<?> getAreas(
             @RequestParam(required = false) String districtCode) {
 
-        log.info("GET /api/master-data/areas — districtCode={}", districtCode);
+        log.info("GET /api/master-data/areas  districtCode={}", districtCode);
 
         List<AreaEntity> areas;
         if (districtCode != null && !districtCode.isBlank()) {
@@ -60,21 +61,21 @@ public class MasterDataController {
         ));
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // 
     // GET /api/master-data/land-types
-    // ──────────────────────────────────────────────────────────────────
+    // 
 
     /**
-     * Trả về toàn bộ danh sách Loại đất (land_types) từ DB.
-     * Frontend dùng để render Combobox "Loại đất" trong form kê khai.
+     * Tra ve toan bo danh sach Loai dat (land_types) tu DB.
+     * Frontend dung de render Combobox "Loai dat" trong form ke khai.
      *
-     * @param taxPaymentOnly (tuỳ chọn) nếu true → chỉ trả loại đất phải nộp thuế
+     * @param taxPaymentOnly (tuy chon) neu true  chi tra loai dat phai nop thue
      */
     @GetMapping("/land-types")
     public ResponseEntity<?> getLandTypes(
             @RequestParam(required = false, defaultValue = "false") boolean taxPaymentOnly) {
 
-        log.info("GET /api/master-data/land-types — taxPaymentOnly={}", taxPaymentOnly);
+        log.info("GET /api/master-data/land-types  taxPaymentOnly={}", taxPaymentOnly);
 
         List<LandTypeEntity> landTypes = landTypeJpaRepository.findAll();
 
@@ -87,6 +88,28 @@ public class MasterDataController {
         return ResponseEntity.ok(Map.of(
                 "data",  landTypes,
                 "total", landTypes.size()
+        ));
+    }
+
+    /**
+     * Tao mot Loai dat (LandType) moi.
+     * Chi danh cho ROLE_ADMIN.
+     */
+    @PostMapping("/land-types")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<?> createLandType(@RequestBody Map<String, Object> req) {
+        log.info("POST /api/master-data/land-types  body={}", req);
+
+        LandTypeEntity entity = LandTypeEntity.builder()
+                .typeCode((String) req.get("typeCode"))
+                .typeName((String) req.get("typeName"))
+                .isTaxPayment((Boolean) req.get("isTaxPayment"))
+                .build();
+
+        LandTypeEntity saved = landTypeJpaRepository.save(entity);
+        return ResponseEntity.ok(Map.of(
+                "data", saved,
+                "message", "Tao loai dat thanh cong"
         ));
     }
 }

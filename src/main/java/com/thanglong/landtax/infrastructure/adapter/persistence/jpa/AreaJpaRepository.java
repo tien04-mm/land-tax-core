@@ -9,6 +9,6 @@ import java.util.List;
 @Repository
 public interface AreaJpaRepository extends JpaRepository<AreaEntity, Integer> {
 
-    /** Tìm tất cả khu vực theo mã quận */
+    /** Tim tat ca khu vuc theo ma quan */
     List<AreaEntity> findByDistrictCode(String districtCode);
 }

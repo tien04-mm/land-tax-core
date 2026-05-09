@@ -16,17 +16,17 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 /**
- * Use case xử lý webhook thanh toán thành công từ PayOS.
+ * Use case xu ly webhook thanh toan thanh cong tu PayOS.
  *
- * <p><b>Luồng @Transactional:</b></p>
+ * <p><b>Luong @Transactional:</b></p>
  * <ol>
- *   <li>Tìm bản ghi tax_payments bằng transaction_code (= orderCode PayOS gửi)</li>
- *   <li>Cập nhật payment_status → PAID, paid_at → now()</li>
- *   <li>Cập nhật records.current_status → COMPLETED</li>
- *   <li>Gửi thông báo "Cảm ơn bạn đã nộp thuế..." cho người dân</li>
+ *   <li>Tim ban ghi tax_payments bang transaction_code (= orderCode PayOS gui)</li>
+ *   <li>Cap nhat payment_status -> PAID, paid_at -> now()</li>
+ *   <li>Cap nhat records.current_status -> COMPLETED</li>
+ *   <li>Gui thong bao "Cam on ban da nop thue..." cho nguoi dan</li>
  * </ol>
  *
- * <p>Toàn bộ nằm trong @Transactional → nếu bất kỳ bước nào lỗi, rollback tất cả.</p>
+ * <p>Toan bo nam trong @Transactional neu bat ky buoc nao loi, rollback tat ca.</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -42,58 +42,58 @@ public class HandlePaymentWebhookUseCase {
     private final AuditLogService auditLogService;
 
     /**
-     * Xử lý thanh toán thành công.
+     * Xu ly thanh toan thanh cong.
      *
-     * @param orderCode Mã đơn hàng PayOS gửi qua webhook (= transaction_code trong DB)
+     * @param orderCode Ma don hang PayOS gui qua webhook (= transaction_code trong DB)
      */
     @Transactional
     public void handlePaymentSuccess(String orderCode) {
         log.info("Processing PayOS webhook SUCCESS for orderCode: {}", orderCode);
 
-        // ===== BƯỚC 1: Tìm bản ghi thanh toán bằng transaction_code =====
+        // ===== BUOC 1: Tim ban ghi thanh toan bang transaction_code =====
         TaxPaymentEntity payment = taxPaymentJpaRepository.findByTransactionCode(orderCode)
                 .orElseThrow(() -> {
                     log.error("Payment not found for orderCode: {}", orderCode);
                     return new RuntimeException(
-                            "Không tìm thấy bản ghi thanh toán cho orderCode: " + orderCode);
+                            "Payment record not found for orderCode: " + orderCode);
                 });
 
-        // Kiểm tra trạng thái — tránh xử lý trùng (idempotent)
+        // Kiem tra trang thai de tranh xu ly trung (idempotent)
         if ("PAID".equals(payment.getPaymentStatus())) {
             log.warn("Payment already marked as PAID: payId={}, orderCode={}", payment.getPayId(), orderCode);
             return;
         }
 
-        // ===== BƯỚC 2: Cập nhật tax_payments → PAID =====
+        // ===== BUOC 2: Cap nhat tax_payments -> PAID =====
         payment.setPaymentStatus("PAID");
         payment.setPaidAt(LocalDateTime.now());
         taxPaymentJpaRepository.save(payment);
 
-        log.info("Payment updated to PAID: payId={}, amount={} VNĐ",
+        log.info("Payment updated to PAID: payId={}, amount={} VND",
                 payment.getPayId(), payment.getTotalAmountDue());
 
-        // Cập nhật TaxBillEntity (nếu có)
+        // Cap nhat TaxBillEntity (neu co)
         taxBillRepository.findById(payment.getPayId()).ifPresent(bill -> {
             bill.setStatus("PAID");
             taxBillRepository.save(bill);
             log.info("TaxBillEntity updated to PAID: billId={}", bill.getBillId());
             
-            // Tự động chèn bản ghi thông báo
+            // Tu dong chen ban ghi thong bao
             NotificationEntity noti = NotificationEntity.builder()
-                .accountId(0) // Giá trị dummy nếu không dùng account_id
+                .accountId(0) // Gia tri dummy neu khong dung account_id
                 .notiType("PAYMENT_SUCCESS")
                 .cccdNumber(bill.getCccdNumber())
-                .message("Hóa đơn cho hồ sơ " + bill.getDeclarationId() + " đã được thanh toán thành công")
-                .title("Thanh toán thành công")
-                .content("Hóa đơn cho hồ sơ " + bill.getDeclarationId() + " đã được thanh toán thành công")
+                .message("Bill for declaration " + bill.getDeclarationId() + " has been paid successfully")
+                .title("Payment Success")
+                .content("Bill for declaration " + bill.getDeclarationId() + " has been paid successfully")
                 .isRead(false)
                 .createdAt(LocalDateTime.now())
                 .build();
             notificationJpaRepository.save(noti);
-            log.info("Đã tạo thông báo hộp thư cho CCCD: {}", bill.getCccdNumber());
+            log.info("Created notification for CCCD: {}", bill.getCccdNumber());
         });
 
-        // ===== BƯỚC 3: Cập nhật records → COMPLETED =====
+        // ===== BUOC 3: Cap nhat records -> COMPLETED =====
         if (payment.getRecordId() != null) {
             RecordEntity record = recordJpaRepository.findById(payment.getRecordId())
                     .orElse(null);
@@ -103,9 +103,9 @@ public class HandlePaymentWebhookUseCase {
                 record.setCurrentStatus("COMPLETED");
                 recordJpaRepository.save(record);
 
-                log.info("Record {} status updated: {} → COMPLETED", record.getRecordId(), oldStatus);
+                log.info("Record {} status updated: {} -> COMPLETED", record.getRecordId(), oldStatus);
 
-                // ===== BƯỚC 4: Gửi thông báo cho người dân =====
+                // ===== BUOC 4: Gui thong bao cho nguoi dan =====
                 try {
                     notificationService.notifyPaymentSuccess(
                             record.getCitizenId(),
@@ -114,14 +114,14 @@ public class HandlePaymentWebhookUseCase {
                             payment.getTaxYear()
                     );
                 } catch (Exception e) {
-                    // Không rollback transaction nếu notification lỗi
+                    // Khong rollback transaction neu notification loi
                     log.error("Failed to send payment notification: {}", e.getMessage());
                 }
             }
         }
         
         // Ghi AuditLog
-        auditLogService.log("WEBHOOK_PAYOS_SUCCESS", "TAX_PAYMENT", orderCode, "Hệ thống xác nhận thanh toán thành công từ PayOS cho đơn hàng " + orderCode);
+        auditLogService.log("WEBHOOK_PAYOS_SUCCESS", "TAX_PAYMENT", orderCode, "System confirmed payment success from PayOS for order " + orderCode);
 
         log.info("Webhook processing completed for orderCode: {}", orderCode);
     }

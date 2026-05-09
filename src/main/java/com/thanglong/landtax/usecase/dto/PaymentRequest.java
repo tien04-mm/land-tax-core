@@ -6,7 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 
 /**
- * DTO cho yêu cầu thanh toán.
+ * DTO cho yeu cau thanh toan.
  */
 @Getter
 @Setter
@@ -15,13 +15,13 @@ import java.math.BigDecimal;
 @Builder
 public class PaymentRequest {
 
-    @NotNull(message = "ID bản ghi thuế không được để trống")
+    @NotNull(message = "ID ban ghi thue khong duoc de trong")
     private Long taxRecordId;
 
-    @NotNull(message = "ID công dân không được để trống")
+    @NotNull(message = "ID cong dan khong duoc de trong")
     private Long citizenId;
 
-    @NotNull(message = "Số tiền không được để trống")
+    @NotNull(message = "So tien khong duoc de trong")
     private BigDecimal amount;
 
     private String paymentMethod;   // PAYOS, BANK_TRANSFER, CASH

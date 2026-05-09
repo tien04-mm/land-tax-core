@@ -20,7 +20,7 @@ public class NotificationController {
 
     private final NotificationJpaRepository notificationJpaRepository;
 
-    @Operation(summary = "Xem hộp thư thông báo", description = "Người dân xem các thông báo hệ thống gửi đến")
+    @Operation(summary = "Xem hop thu thong bao", description = "Nguoi dan xem cac thong bao he thong gui den")
     @GetMapping("/me")
     @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<List<NotificationEntity>> getMyNotifications() {

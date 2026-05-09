@@ -6,7 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 
 /**
- * DTO cho tờ khai thuế đất.
+ * DTO cho to khai thue dat.
  */
 @Getter
 @Setter
@@ -17,16 +17,16 @@ public class TaxDeclarationDTO {
 
     private Long id;
 
-    @NotNull(message = "Mã thửa đất không được để trống")
+    @NotNull(message = "Ma thua dat khong duoc de trong")
     private Long landParcelId;
 
-    @NotNull(message = "ID công dân không được để trống")
+    @NotNull(message = "ID cong dan khong duoc de trong")
     private Long citizenId;
 
-    @NotNull(message = "Năm tính thuế không được để trống")
+    @NotNull(message = "Nam tinh thue khong duoc de trong")
     private Integer taxYear;
 
-    @NotNull(message = "Diện tích chịu thuế không được để trống")
+    @NotNull(message = "Dien tich chiu thue khong duoc de trong")
     private BigDecimal taxableArea;
 
     private BigDecimal taxRate;

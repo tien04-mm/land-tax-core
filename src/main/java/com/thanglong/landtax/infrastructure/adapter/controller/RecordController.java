@@ -21,18 +21,18 @@ public class RecordController {
     private final VerifyDeclarationUseCase verifyDeclarationUseCase;
 
     /**
-     * Lấy danh sách hồ sơ đang chờ xác minh (trạng thái SUBMITTED).
+     * Lay danh sach ho so dang cho xac minh (trang thai SUBMITTED).
      */
     @GetMapping("/submitted")
     @PreAuthorize("hasRole('LAND_OFFICER')")
     public ResponseEntity<List<RecordEntity>> getSubmittedRecords() {
-        log.info("GET /api/records/submitted - LAND_OFFICER lấy danh sách hồ sơ chờ xác minh");
+        log.info("GET /api/records/submitted - LAND_OFFICER lay danh sach ho so cho xac minh");
         List<RecordEntity> records = recordJpaRepository.findByCurrentStatus("SUBMITTED");
         return ResponseEntity.ok(records);
     }
 
     /**
-     * Tiếp nhận và xác minh hồ sơ.
+     * Tiep nhan va xac minh ho so.
      */
     @PutMapping("/{id}/verify")
     @PreAuthorize("hasRole('LAND_OFFICER')")
@@ -41,7 +41,7 @@ public class RecordController {
         try {
             return ResponseEntity.ok(verifyDeclarationUseCase.verifyDeclaration(id));
         } catch (RuntimeException e) {
-            log.error("Lỗi khi xác minh hồ sơ {}: {}", id, e.getMessage());
+            log.error("Loi khi xac minh ho so {}: {}", id, e.getMessage());
             return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
         }
     }

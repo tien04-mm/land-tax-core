@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * JPA Entity mapping với bảng tax_exempt_subjects trong CSDL.
+ * JPA Entity mapping voi bang tax_exempt_subjects trong CSDL.
  */
 @Entity
 @Table(name = "tax_exempt_subjects")

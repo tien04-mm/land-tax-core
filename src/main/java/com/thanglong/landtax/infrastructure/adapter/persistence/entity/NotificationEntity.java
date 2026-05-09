@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * JPA Entity mapping chính xác với bảng notifications trong land_tax_management.sql.
+ * JPA Entity mapping chinh xac voi bang notifications trong land_tax_management.sql.
  */
 @Entity
 @Table(name = "notifications")
@@ -23,7 +23,7 @@ public class NotificationEntity {
     private Integer notiId;
 
     @Column(name = "account_id", nullable = false)
-    private Integer accountId;                  // FK → accounts.account_id
+    private Integer accountId;                  // FK  accounts.account_id
 
     @Column(name = "title", nullable = false, length = 255)
     private String title;

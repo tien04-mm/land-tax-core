@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Tích hợp Cloudinary cho upload và quản lý hình ảnh.
+ * Tich hop Cloudinary cho upload va quan ly hinh anh.
  */
 @Service
 @RequiredArgsConstructor
@@ -21,7 +21,7 @@ public class CloudinaryAdapter {
     private final Cloudinary cloudinary;
 
     /**
-     * Upload file lên Cloudinary.
+     * Upload file len Cloudinary.
      */
     @SuppressWarnings("unchecked")
     public String uploadFile(MultipartFile file, String folder) {
@@ -38,12 +38,12 @@ public class CloudinaryAdapter {
             return url;
         } catch (IOException e) {
             log.error("Failed to upload file to Cloudinary: {}", e.getMessage());
-            throw new RuntimeException("Upload file thất bại: " + e.getMessage());
+            throw new RuntimeException("Upload file that bai: " + e.getMessage());
         }
     }
 
     /**
-     * Xóa file từ Cloudinary.
+     * Xoa file tu Cloudinary.
      */
     public void deleteFile(String publicId) {
         try {

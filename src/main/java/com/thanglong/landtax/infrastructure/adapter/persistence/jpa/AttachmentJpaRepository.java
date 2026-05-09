@@ -9,10 +9,10 @@ import java.util.List;
 @Repository
 public interface AttachmentJpaRepository extends JpaRepository<AttachmentEntity, Long> {
 
-    /** Lấy danh sách file theo người upload */
+    /** Lay danh sach file theo nguoi upload */
     List<AttachmentEntity> findByUploadedBy(String uploadedBy);
 
-    /** Lấy danh sách file liên kết với một thực thể */
+    /** Lay danh sach file lien ket voi mot thuc the */
     List<AttachmentEntity> findByRelatedEntityTypeAndRelatedEntityId(
             String relatedEntityType, Long relatedEntityId);
 }

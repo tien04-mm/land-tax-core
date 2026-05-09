@@ -5,7 +5,7 @@ import com.thanglong.landtax.usecase.dto.TaxDeclarationDTO;
 import org.springframework.stereotype.Component;
 
 /**
- * Mapper chuyển đổi giữa TaxRecord domain model và TaxDeclarationDTO.
+ * Mapper chuyen doi giua TaxRecord domain model va TaxDeclarationDTO.
  */
 @Component
 public class TaxRecordMapper {

@@ -4,7 +4,7 @@ import lombok.*;
 
 
 /**
- * Các DTO liên quan đến xác thực và vai trò.
+ * Cac DTO lien quan den xac thuc va vai tro.
  */
 public class AuthRequest {
 

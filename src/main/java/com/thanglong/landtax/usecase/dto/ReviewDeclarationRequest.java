@@ -3,7 +3,7 @@ package com.thanglong.landtax.usecase.dto;
 import lombok.*;
 
 /**
- * DTO cho yêu cầu duyệt/từ chối tờ khai.
+ * DTO cho yeu cau duyet/tu choi to khai.
  */
 @Getter
 @Setter
@@ -12,5 +12,5 @@ import lombok.*;
 @Builder
 public class ReviewDeclarationRequest {
 
-    private String processorNotes;              // Ghi chú của cán bộ duyệt (bắt buộc khi reject)
+    private String processorNotes;              // Ghi chu cua can bo duyet (bat buoc khi reject)
 }

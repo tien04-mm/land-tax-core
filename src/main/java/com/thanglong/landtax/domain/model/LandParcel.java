@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Domain model đại diện cho thửa đất.
+ * Domain model dai dien cho thua dat.
  */
 @Getter
 @Setter
@@ -16,14 +16,14 @@ import java.time.LocalDateTime;
 public class LandParcel {
 
     private Long id;
-    private String parcelCode;          // Mã thửa đất
+    private String parcelCode;          // Ma thua dat
     private String address;
-    private BigDecimal area;            // Diện tích (m²)
-    private String landType;            // Loại đất
-    private String purpose;             // Mục đích sử dụng
-    private Long ownerId;              // ID chủ sở hữu
+    private BigDecimal area;            // Dien tich (m)
+    private String landType;            // Loai dat
+    private String purpose;             // Muc dich su dung
+    private Long ownerId;              // ID chu so huu
     private String ownerName;
-    private BigDecimal landPrice;       // Giá đất (VNĐ/m²)
+    private BigDecimal landPrice;       // Gia dat (VND/m)
     private String status;             // ACTIVE, PENDING, DISPUTED
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

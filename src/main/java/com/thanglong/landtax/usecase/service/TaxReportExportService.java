@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Service xuất báo cáo tình hình thu thuế theo khu vực ra file Excel (.xlsx).
+ * Service xuat bao cao tinh hinh thu thue theo khu vuc ra file Excel (.xlsx).
  */
 @Service
 @RequiredArgsConstructor
@@ -26,28 +26,28 @@ public class TaxReportExportService {
     private final LandParcelJpaRepository landParcelJpaRepository;
 
     /**
-     * Xuất báo cáo tình hình thu thuế khu vực ra file Excel.
+     * Xuat bao cao tinh hinh thu thue khu vuc ra file Excel.
      *
-     * @param areaId ID khu vực (null = tất cả)
-     * @param status Trạng thái hóa đơn: PAID / UNPAID / null (tất cả)
-     * @param year   Năm báo cáo (dùng cho tiêu đề, null = không lọc theo năm)
-     * @return byte[] nội dung file .xlsx
+     * @param areaId ID khu vuc (null = tat ca)
+     * @param status Trang thai hoa don: PAID / UNPAID / null (tat ca)
+     * @param year   Nam bao cao (dung cho tieu de, null = khong loc theo nam)
+     * @return byte[] noi dung file .xlsx
      */
     public byte[] exportToExcel(Integer areaId, String status, Integer year) throws Exception {
-        log.info("Xuất báo cáo Excel: areaId={}, status={}, year={}", areaId, status, year);
+        log.info("Exporting Excel report: areaId={}, status={}, year={}", areaId, status, year);
 
-        // Lấy danh sách thửa đất theo khu vực
+        // Lay danh sach thua dat theo khu vuc
         List<LandParcelEntity> parcels = (areaId != null)
                 ? landParcelJpaRepository.findByAreaId(areaId)
                 : landParcelJpaRepository.findAll();
 
-        // Lấy danh sách billId theo thửa đất (dựa trên declarationId - nếu có quan hệ)
-        // Ở đây lấy tất cả bills rồi lọc theo status
+        // Lay danh sach billId theo thua dat (dua tren declarationId - neu co quan he)
+        // O day lay tat ca bills roi loc theo status
         List<TaxBillEntity> allBills = (status != null && !status.isBlank())
                 ? taxBillRepository.findByStatus(status)
                 : taxBillRepository.findAll();
 
-        // Build thống kê tổng hợp
+        // Build thong ke tong hop
         BigDecimal totalAmount = allBills.stream()
                 .map(b -> b.getAmount() != null ? b.getAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -55,21 +55,21 @@ public class TaxReportExportService {
         long unpaidCount = allBills.stream().filter(b -> "UNPAID".equals(b.getStatus())).count();
 
         try (Workbook workbook = new XSSFWorkbook()) {
-            // ===== Sheet 1: Tổng hợp =====
-            Sheet summarySheet = workbook.createSheet("Tổng hợp");
+            // ===== Sheet 1: Tong hop =====
+            Sheet summarySheet = workbook.createSheet("Tong hop");
             createSummarySheet(summarySheet, workbook, areaId, status, year, totalAmount, paidCount, unpaidCount, parcels.size());
 
-            // ===== Sheet 2: Chi tiết hóa đơn =====
-            Sheet detailSheet = workbook.createSheet("Chi tiết hóa đơn");
+            // ===== Sheet 2: Chi tiet hoa don =====
+            Sheet detailSheet = workbook.createSheet("Chi tiet hoa don");
             createDetailSheet(detailSheet, workbook, allBills);
 
-            // ===== Sheet 3: Danh sách thửa đất =====
-            Sheet parcelSheet = workbook.createSheet("Danh sách thửa đất");
+            // ===== Sheet 3: Danh sach thua dat =====
+            Sheet parcelSheet = workbook.createSheet("Danh sach thua dat");
             createParcelSheet(parcelSheet, workbook, parcels);
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             workbook.write(out);
-            log.info("Xuất báo cáo thành công: {} hóa đơn, {} thửa đất", allBills.size(), parcels.size());
+            log.info("Report exported successfully: {} bills, {} parcels", allBills.size(), parcels.size());
             return out.toByteArray();
         }
     }
@@ -92,18 +92,18 @@ public class TaxReportExportService {
         int rowIdx = 0;
         Row titleRow = sheet.createRow(rowIdx++);
         Cell titleCell = titleRow.createCell(0);
-        titleCell.setCellValue("BÁO CÁO TÌNH HÌNH THU THUẾ ĐẤT");
+        titleCell.setCellValue("BAO CAO TINH HINH THU THUE DAT");
         titleCell.setCellStyle(titleStyle);
 
         rowIdx++; // blank row
         String[][] summaryData = {
-                {"Khu vực (areaId)", areaId != null ? String.valueOf(areaId) : "Tất cả"},
-                {"Trạng thái lọc", status != null ? status : "Tất cả"},
-                {"Năm báo cáo", year != null ? String.valueOf(year) : "Tất cả"},
-                {"Tổng số thửa đất", String.valueOf(parcelCount)},
-                {"Tổng số hóa đơn PAID", String.valueOf(paid)},
-                {"Tổng số hóa đơn UNPAID", String.valueOf(unpaid)},
-                {"Tổng thu thuế (VNĐ)", total.toPlainString()},
+                {"Khu vuc (areaId)", areaId != null ? String.valueOf(areaId) : "Tat ca"},
+                {"Trang thai loc", status != null ? status : "Tat ca"},
+                {"Nam bao cao", year != null ? String.valueOf(year) : "Tat ca"},
+                {"Tong so thua dat", String.valueOf(parcelCount)},
+                {"Tong so hoa don PAID", String.valueOf(paid)},
+                {"Tong so hoa don UNPAID", String.valueOf(unpaid)},
+                {"Tong thu thue (VND)", total.toPlainString()},
         };
 
         for (String[] row : summaryData) {
@@ -124,7 +124,7 @@ public class TaxReportExportService {
         headerStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
         headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-        String[] headers = {"Mã HĐ (billId)", "CCCD", "Số tiền (VNĐ)", "Trạng thái", "Mô tả", "Công thức tính"};
+        String[] headers = {"Ma HD (billId)", "CCCD", "So tien (VND)", "Trang thai", "Mo ta", "Cong thuc tinh"};
         Row hRow = sheet.createRow(0);
         for (int i = 0; i < headers.length; i++) {
             Cell c = hRow.createCell(i);
@@ -152,7 +152,7 @@ public class TaxReportExportService {
         headerStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
         headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-        String[] headers = {"Số thửa", "Tờ bản đồ", "Diện tích (m²)", "Địa chỉ", "CCCD Chủ", "Loại đất"};
+        String[] headers = {"So thua", "To ban do", "Dien tich (m2)", "Dia chi", "CCCD Chu", "Loai dat"};
         Row hRow = sheet.createRow(0);
         for (int i = 0; i < headers.length; i++) {
             Cell c = hRow.createCell(i);
@@ -168,7 +168,7 @@ public class TaxReportExportService {
             row.createCell(2).setCellValue(p.getAreaSize() != null ? p.getAreaSize().doubleValue() : 0);
             row.createCell(3).setCellValue(p.getAddress() != null ? p.getAddress() : "");
             row.createCell(4).setCellValue(p.getOwnerCccd() != null ? p.getOwnerCccd() : "");
-            row.createCell(5).setCellValue(p.getLandTypeId() != null ? "Loại " + p.getLandTypeId() : "");
+            row.createCell(5).setCellValue(p.getLandTypeId() != null ? "Loai " + p.getLandTypeId() : "");
         }
         for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
     }

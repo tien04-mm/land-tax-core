@@ -13,21 +13,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Use case đồng bộ thông tin công dân từ VNeID Auth Service sang land_tax_management.
+ * Use case ng b th ng tin c ng d n t VNeID Auth Service sang
+ * land_tax_management.
  *
- * <p><b>Luồng xử lý:</b></p>
+ * <p>
+ * <b>Lu ng x l :</b>
+ * </p>
  * <ol>
- *   <li>Kiểm tra cccd_number đã tồn tại trong bảng citizens cục bộ chưa</li>
- *   <li>Nếu đã tồn tại → trả về citizen_id (INT) ngay</li>
- *   <li>Nếu chưa tồn tại → gọi VneidServiceClient lấy thông tin từ VNeID</li>
- *   <li>INSERT vào bảng citizens → lấy citizen_id tự tăng</li>
- *   <li>INSERT vào bảng accounts với role_id = 2 (CITIZEN)</li>
- *   <li>Cả 2 INSERT nằm trong @Transactional → rollback nếu lỗi</li>
+ * <li>Ki m tra cccd_number t n t i trong b ng citizens c c b ch a</li>
+ * <li>N u t n t i tr v citizen_id (INT) ngay</li>
+ * <li>N u ch a t n t i g i VneidServiceClient l y th ng tin t VNeID</li>
+ * <li>INSERT v o b ng citizens l y citizen_id t t ng</li>
+ * <li>INSERT v o b ng accounts v i role_id = 2 (CITIZEN)</li>
+ * <li>C 2 INSERT n m trong @Transactional rollback n u l i</li>
  * </ol>
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class SyncUserFromVneidUseCase {
 
     private final VneidServiceClient vneidServiceClient;
@@ -37,22 +41,24 @@ public class SyncUserFromVneidUseCase {
     @org.springframework.beans.factory.annotation.Value("${internal.api.secret:VNeIDInternalSecretKey2025}")
     private String internalSecret;
 
-    /** role_id = 2 tương ứng với vai trò CITIZEN trong bảng roles */
+    /** role_id = 2 t ng ng v i vai tr CITIZEN trong b ng roles */
     private static final int ROLE_CITIZEN = 2;
 
     /**
-     * Đồng bộ công dân từ VNeID dựa trên số CCCD.
+     * ng b c ng d n t VNeID d a tr n s CCCD.
      *
-     * <p>Nếu CCCD đã tồn tại trong DB cục bộ, trả về citizen_id hiện có.
-     * Nếu chưa, gọi VNeID Internal API để lấy thông tin, sau đó INSERT
-     * vào cả bảng citizens và accounts trong cùng một transaction.</p>
+     * <p>
+     * N u CCCD t n t i trong DB c c b , tr v citizen_id hi n c .
+     * N u ch a, g i VNeID Internal API l y th ng tin, sau INSERT
+     * v o c b ng citizens v accounts trong c ng m t transaction.
+     * </p>
      *
-     * @param cccdNumber Số Căn cước công dân (12 số) trích xuất từ JWT
-     * @return citizen_id (INT) cục bộ trong bảng land_tax_management.citizens
+     * @param cccdNumber S C n c c c ng d n (12 s ) tr ch xu t t JWT
+     * @return citizen_id (INT) c c b trong b ng land_tax_management.citizens
      */
     @Transactional
     public Integer syncAndGetCitizenId(String cccdNumber) {
-        // ===== BƯỚC 1: Kiểm tra CCCD đã tồn tại trong DB cục bộ chưa =====
+        // ===== B C 1: Ki m tra CCCD t n t i trong DB c c b ch a =====
         var existingCitizen = citizenLocalJpaRepository.findByCccdNumber(cccdNumber);
         if (existingCitizen.isPresent()) {
             log.info("Citizen already exists locally: CCCD={}, citizenId={}",
@@ -60,29 +66,29 @@ public class SyncUserFromVneidUseCase {
             return existingCitizen.get().getCitizenId();
         }
 
-        // ===== BƯỚC 2: Gọi VNeID Internal API lấy thông tin =====
+        // ===== B C 2: G i VNeID Internal API l y th ng tin =====
         log.info("Citizen not found locally. Fetching from VNeID: CCCD={}", cccdNumber);
 
         CitizenIdentityDTO vneidData;
         try {
-            ApiResponse<CitizenIdentityDTO> response = 
-                    vneidServiceClient.getCitizenByCccd(cccdNumber, internalSecret);
-            
+            ApiResponse<CitizenIdentityDTO> response = vneidServiceClient.getCitizenByCccd(cccdNumber, internalSecret);
+
             if (response == null || !response.isSuccess()) {
-                throw new RuntimeException("VNeID trả về lỗi: " + (response != null ? response.getMessage() : "Unknown error"));
+                throw new RuntimeException(
+                        "VNeID tr  v  l i: " + (response != null ? response.getMessage() : "Unknown error"));
             }
             vneidData = response.getData();
         } catch (Exception e) {
             log.error("Failed to fetch citizen from VNeID: CCCD={}, error={}", cccdNumber, e.getMessage());
             throw new RuntimeException(
-                    "Không thể lấy thông tin công dân từ VNeID cho CCCD: " + cccdNumber, e);
+                    "Kh ng th  l y th ng tin c ng d n t  VNeID cho CCCD: " + cccdNumber, e);
         }
 
         if (vneidData == null) {
-            throw new RuntimeException("VNeID trả về dữ liệu rỗng cho CCCD: " + cccdNumber);
+            throw new RuntimeException("VNeID tr  v  d  li u r ng cho CCCD: " + cccdNumber);
         }
 
-        // ===== BƯỚC 3: INSERT vào bảng citizens =====
+        // ===== B C 3: INSERT v o b ng citizens =====
         CitizenLocalEntity newCitizen = CitizenLocalEntity.builder()
                 .cccdNumber(java.util.Optional.ofNullable(vneidData.getCccdNumber()).orElse(cccdNumber))
                 .fullName(java.util.Optional.ofNullable(vneidData.getFullName()).orElse("Unknown"))
@@ -97,7 +103,7 @@ public class SyncUserFromVneidUseCase {
 
         log.info("Inserted citizen into local DB: CCCD={}, citizenId={}", cccdNumber, newCitizenId);
 
-        // ===== BƯỚC 4: INSERT vào bảng accounts với role_id = 2 (CITIZEN) =====
+        // ===== B C 4: INSERT v o b ng accounts v i role_id = 2 (CITIZEN) =====
         AccountEntity newAccount = AccountEntity.builder()
                 .citizenId(newCitizenId)
                 .roleId(ROLE_CITIZEN)

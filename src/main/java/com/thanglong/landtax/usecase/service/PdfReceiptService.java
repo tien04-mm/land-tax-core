@@ -20,7 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Service xuất biên lai điện tử (PDF) cho thanh toán thuế.
+ * Service xuat bien lai dien tu (PDF) cho thanh toan thue.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,34 +34,34 @@ public class PdfReceiptService {
     private final CitizenLocalJpaRepository citizenLocalJpaRepository;
 
     /**
-     * Tạo file PDF biên lai điện tử cho một khoản thanh toán.
-     * Chỉ cho phép xuất PDF khi thanh toán đã có trạng thái PAID.
+     * Tao file PDF bien lai dien tu cho mot khoan thanh toan.
+     * Chi cho phep xuat PDF khi thanh toan da co trang thai PAID.
      *
-     * @param payId ID bản ghi thanh toán
-     * @return mảng byte nội dung file PDF
+     * @param payId ID ban ghi thanh toan
+     * @return mang byte noi dung file PDF
      */
     public byte[] generatePaymentReceipt(Integer payId) {
         log.info("Generating PDF receipt for payId: {}", payId);
 
-        // 1. Tìm thông tin thanh toán
+        // 1. Tim thong tin thanh toan
         TaxPaymentEntity payment = taxPaymentJpaRepository.findById(payId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch thanh toán: " + payId));
+                .orElseThrow(() -> new RuntimeException("Payment transaction not found: " + payId));
 
         if (!"PAID".equals(payment.getPaymentStatus())) {
-            throw new RuntimeException("Chỉ có thể xuất biên lai cho các giao dịch đã thanh toán thành công (PAID).");
+            throw new RuntimeException("Receipt can only be generated for successfully paid transactions (PAID).");
         }
 
-        // 2. Tìm thông tin hồ sơ và thửa đất
+        // 2. Tim thong tin ho so va thua dat
         RecordEntity record = recordJpaRepository.findById(payment.getRecordId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy hồ sơ liên quan"));
+                .orElseThrow(() -> new RuntimeException("Related record not found"));
 
         LandParcelEntity parcel = landParcelJpaRepository.findById(payment.getLandParcelId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thửa đất liên quan"));
+                .orElseThrow(() -> new RuntimeException("Related land parcel not found"));
 
         CitizenLocalEntity citizen = citizenLocalJpaRepository.findById(record.getCitizenId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin chủ đất"));
+                .orElseThrow(() -> new RuntimeException("Landowner information not found"));
 
-        // 3. Khởi tạo Document PDF (Dùng thư viện iText)
+        // 3. Khoi tao Document PDF (Dung thu vien iText)
         Document document = new Document();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -69,26 +69,26 @@ public class PdfReceiptService {
             PdfWriter.getInstance(document, out);
             document.open();
 
-            // Font mặc định của iText không hỗ trợ Tiếng Việt có dấu,
-            // Để đơn giản ta có thể cấu hình font Arial hoặc viết tiếng Việt không dấu (nếu không map font)
-            // Trong thực tế cần map font ttf, ở đây demo dùng Helvetica
+            // Font mac dinh cua iText khong ho tro Tieng Viet co dau,
+            // don gian ta co the cau hinh font Arial hoac viet tieng Viet khong dau (neu khong map font)
+            // Trong thuc te can map font ttf, o day demo dung Helvetica
             Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, BaseColor.BLACK);
             Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, BaseColor.BLACK);
             Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 12, BaseColor.BLACK);
 
-            // Tiêu đề
+            // Tieu de
             Paragraph title = new Paragraph("BIEN LAI THANH TOAN THUE DAT (ELECTRONIC RECEIPT)", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
             title.setSpacingAfter(20f);
             document.add(title);
 
-            // Bảng thông tin
+            // Bang thong tin
             PdfPTable table = new PdfPTable(2);
             table.setWidthPercentage(100);
             table.setSpacingBefore(10f);
             table.setSpacingAfter(10f);
 
-            // Các hàng dữ liệu
+            // Cac hang du lieu
             addTableRow(table, "Ma ho so (Record ID):", String.valueOf(record.getRecordId()), headerFont, normalFont);
             addTableRow(table, "Chu dat (Landowner):", citizen.getFullName() + " (CCCD: " + citizen.getCccdNumber() + ")", headerFont, normalFont);
             addTableRow(table, "Ma thua dat (Parcel Number):", parcel.getParcelNumber(), headerFont, normalFont);
@@ -105,8 +105,8 @@ public class PdfReceiptService {
 
             document.add(table);
 
-            // Lời cảm ơn
-            Paragraph footer = new Paragraph("Cam on ban da hoan thanh nghia vu thue!", normalFont);
+            // Loi cam on
+            Paragraph footer = new Paragraph("Thank you for fulfilling your tax obligations!", normalFont);
             footer.setAlignment(Element.ALIGN_CENTER);
             footer.setSpacingBefore(30f);
             document.add(footer);
@@ -118,7 +118,7 @@ public class PdfReceiptService {
 
         } catch (DocumentException e) {
             log.error("Error generating PDF receipt: {}", e.getMessage());
-            throw new RuntimeException("Lỗi trong quá trình tạo file PDF", e);
+            throw new RuntimeException("Error during PDF file creation", e);
         }
     }
 

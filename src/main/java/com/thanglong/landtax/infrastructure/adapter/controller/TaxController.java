@@ -22,13 +22,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * REST Controller cho quản lý thuế đất.
+ * REST Controller cho quan ly thua dat.
  *
- * <p><b>API Endpoints:</b></p>
+ * <p>
+ * <b>API Endpoints:</b>
+ * </p>
  * <ul>
- *   <li>POST /api/tax/declarations — Nộp tờ khai (Citizen)</li>
- *   <li>PUT /api/tax/declarations/{id}/approve — Duyệt tờ khai (TAX_OFFICER/ADMIN)</li>
- *   <li>PUT /api/tax/declarations/{id}/reject — Từ chối tờ khai (TAX_OFFICER/ADMIN)</li>
+ * <li>POST /api/tax/declarations - Nop to khai (Citizen)</li>
+ * <li>PUT /api/tax/declarations/{id}/approve - Duyet to khai
+ * (TAX_OFFICER/ADMIN)</li>
+ * <li>PUT /api/tax/declarations/{id}/reject - Tu choi to khai
+ * (TAX_OFFICER/ADMIN)</li>
  * </ul>
  */
 @RestController
@@ -48,42 +52,45 @@ public class TaxController {
     private final com.thanglong.landtax.usecase.service.AuditLogService auditLogService;
 
     /**
-     * Nộp tờ khai thuế đất.
-     * JWT token trong Header Authorization → JwtFilter giải mã → cccd_number → citizen_id.
+     * Nop to khai thua dat.
+     * JWT token trong Header Authorization a JwtFilter giai mA a cccd_number
+     * a citizen_id.
      */
-    @Operation(summary = "Nộp tờ khai thuế đất", description = "Người dân nộp tờ khai thuế đất mới")
-    @ApiResponse(responseCode = "200", description = "Nộp tờ khai thành công")
+    @Operation(summary = "Nop to khai thua dat", description = "Nguoi dan nop to khai thua dat moi")
+    @ApiResponse(responseCode = "200", description = "Nop to khai th nh cAng")
     @PostMapping("/declarations")
     @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<TaxDeclarationResponse> submitDeclaration(
             @Valid @RequestBody TaxDeclarationRequest request) {
-        log.info("User: {}, Authorities: {}", SecurityContextHolder.getContext().getAuthentication().getName(), SecurityContextHolder.getContext().getAuthentication().getAuthorities());
+        log.info("User: {}, Authorities: {}", SecurityContextHolder.getContext().getAuthentication().getName(),
+                SecurityContextHolder.getContext().getAuthentication().getAuthorities());
         TaxDeclarationResponse response = submitDeclarationUseCase.submitDeclaration(request);
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Lấy danh sách hồ sơ thuế đã được Địa chính xác nhận (VERIFIED).
+     * Lay danh sach ho so thua dA duoc ia chAnh xac nhan
+     * (VERIFIED).
      */
-    @Operation(summary = "Danh sách hồ sơ chờ duyệt", description = "Lấy danh sách các hồ sơ đã được xác nhận (VERIFIED)")
+    @Operation(summary = "Danh sach ho so cho duyet", description = "Lay danh sach cac ho so dA duoc xac nhan (VERIFIED)")
     @GetMapping("/records/verified")
     @PreAuthorize("hasRole('TAX_OFFICER')")
     public ResponseEntity<?> getVerifiedRecords() {
-        log.info("TAX_OFFICER lấy danh sách hồ sơ VERIFIED");
-        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity> records = 
-            recordJpaRepository.findByCurrentStatus("VERIFIED");
+        log.info("TAX_OFFICER lay danh sach ho so VERIFIED");
+        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity> records = recordJpaRepository
+                .findByCurrentStatus("VERIFIED");
         return ResponseEntity.ok(records);
     }
 
     /**
-     * Duyệt tờ khai thuế đất.
-     * Chỉ TAX_OFFICER mới có quyền.
+     * Duyet to khai thua dat.
+     * Cho TAX_OFFICER moi co quyon.
      *
-     * @param id      record_id trong bảng records
-     * @param request Ghi chú của cán bộ (tùy chọn)
+     * @param id      record_id trong bang records
+     * @param request Ghi chu coa can bo (tAy chon)
      */
-    @Operation(summary = "Duyệt tờ khai thuế đất", description = "Cán bộ thuế duyệt hồ sơ VERIFIED")
-    @ApiResponse(responseCode = "200", description = "Duyệt hồ sơ thành công")
+    @Operation(summary = "Duyet to khai thua dat", description = "Can bo thua duyet ho so VERIFIED")
+    @ApiResponse(responseCode = "200", description = "Duyet ho so th nh cAng")
     @PutMapping("/records/{id}/approve")
     @PreAuthorize("hasRole('TAX_OFFICER')")
     public ResponseEntity<Map<String, Object>> approveRecord(
@@ -94,14 +101,14 @@ public class TaxController {
     }
 
     /**
-     * Từ chối tờ khai thuế đất.
-     * Chỉ TAX_OFFICER mới có quyền.
+     * Tu choi to khai thua dat.
+     * Cho TAX_OFFICER moi co quyon.
      *
-     * @param id      record_id trong bảng records
-     * @param request Lý do từ chối (bắt buộc)
+     * @param id      record_id trong bang records
+     * @param request Ly do tu choi (bat buoc)
      */
-    @Operation(summary = "Từ chối tờ khai thuế đất", description = "Cán bộ thuế từ chối hồ sơ")
-    @ApiResponse(responseCode = "200", description = "Từ chối hồ sơ thành công")
+    @Operation(summary = "Tu choi to khai thua dat", description = "Can bo thua tu choi ho so")
+    @ApiResponse(responseCode = "200", description = "Tu choi ho so th nh cAng")
     @PutMapping("/records/{id}/reject")
     @PreAuthorize("hasRole('TAX_OFFICER')")
     public ResponseEntity<Map<String, Object>> rejectRecord(
@@ -112,25 +119,26 @@ public class TaxController {
     }
 
     /**
-     * Xem lịch sử tờ khai thuế đất.
-     * Dành cho công dân tra cứu tờ khai của chính mình.
+     * Xem lich so to khai thua dat.
+     * D nh cho cAng dan tra cou to khai coa chAnh minh.
      */
-    @Operation(summary = "Xem lịch sử tờ khai", description = "Người dân xem lịch sử các tờ khai đã nộp")
-    @ApiResponse(responseCode = "200", description = "Lấy lịch sử thành công")
+    @Operation(summary = "Xem lich so to khai", description = "Nguoi dan xem lich so cac to khai dA nop")
+    @ApiResponse(responseCode = "200", description = "Lay lich so th nh cAng")
     @GetMapping("/declarations/my-history")
     @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<List<TaxDeclarationResponse>> getMyHistory() {
-        String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
         List<TaxDeclarationResponse> history = taxDeclarationService.getMyHistory(cccd);
         return ResponseEntity.ok(history);
     }
 
     /**
-     * Lấy chi tiết một tờ khai thuế.
-     * Chỉ cho phép người dân xem tờ khai của chính mình.
+     * Lay chi tiat mot to khai thua.
+     * Cho cho phAp nguoi dan xem to khai coa chAnh minh.
      */
-    @Operation(summary = "Xem chi tiết tờ khai", description = "Người dân xem chi tiết tờ khai đã nộp")
-    @ApiResponse(responseCode = "200", description = "Lấy chi tiết thành công")
+    @Operation(summary = "Xem chi tiat to khai", description = "Nguoi dan xem chi tiat to khai dA nop")
+    @ApiResponse(responseCode = "200", description = "Lay chi tiat th nh cAng")
     @GetMapping("/declarations/{id}")
     @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<TaxDeclarationResponse> getDeclarationById(@PathVariable Integer id) {
@@ -140,60 +148,67 @@ public class TaxController {
     }
 
     /**
-     * Hủy tờ khai thuế đất.
-     * Chỉ cho phép hủy nếu trạng thái là PENDING.
+     * Hoy to khai thua dat.
+     * Cho cho phAp hoy nau trang thai l  PENDING.
      */
-    @Operation(summary = "Hủy tờ khai", description = "Người dân hủy tờ khai đang ở trạng thái PENDING")
-    @ApiResponse(responseCode = "200", description = "Hủy tờ khai thành công")
+    @Operation(summary = "Hoy to khai", description = "Nguoi dan hoy to khai dang o trang thai PENDING")
+    @ApiResponse(responseCode = "200", description = "Hoy to khai th nh cAng")
     @DeleteMapping("/declarations/{id}/cancel")
     public ResponseEntity<?> cancelDeclaration(@PathVariable Integer id) {
-        String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
         taxDeclarationService.cancelDeclaration(id, cccd);
-        return ResponseEntity.ok(Map.of("message", "Hủy tờ khai thành công"));
+        return ResponseEntity.ok(Map.of("message", "Hoy to khai th nh cAng"));
     }
 
     /**
-     * Lấy danh sách hóa đơn thuế chưa thanh toán.
-     * Dành cho công dân xem các khoản cần nộp tiền.
+     * Lay danh sach hoa don thua chua thanh toan.
+     * D nh cho cAng dan xem cac khoan can nop tion.
      */
-    @Operation(summary = "Xem hóa đơn chưa thanh toán", description = "Người dân xem các hóa đơn thuế cần nộp")
-    @ApiResponse(responseCode = "200", description = "Lấy danh sách hóa đơn thành công")
+    @Operation(summary = "Xem hoa don chua thanh toan", description = "Nguoi dan xem cac hoa don thua can nop")
+    @ApiResponse(responseCode = "200", description = "Lay danh sach hoa don th nh cAng")
     @GetMapping("/bills/unpaid")
     public ResponseEntity<List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity>> getUnpaidBills() {
-        String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
-        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity> unpaidBills = taxBillService.getUnpaidBills(cccd);
+        String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity> unpaidBills = taxBillService
+                .getUnpaidBills(cccd);
         return ResponseEntity.ok(unpaidBills);
     }
 
     /**
-     * Lấy danh sách hóa đơn thuế ĐÃ thanh toán.
-     * Dành cho công dân xem lịch sử nộp tiền.
+     * Lay danh sach hoa don thua A thanh toan.
+     * D nh cho cAng dan xem lich so nop tion.
      */
-    @Operation(summary = "Xem hóa đơn đã thanh toán", description = "Người dân xem lịch sử hóa đơn thuế đã nộp")
-    @ApiResponse(responseCode = "200", description = "Lấy danh sách hóa đơn thành công")
+    @Operation(summary = "Xem hoa don dA thanh toan", description = "Nguoi dan xem lich so hoa don thua dA nop")
+    @ApiResponse(responseCode = "200", description = "Lay danh sach hoa don th nh cAng")
     @GetMapping("/bills/paid")
     public ResponseEntity<List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity>> getPaidBills() {
-        String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
-        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity> paidBills = taxBillService.getPaidBills(cccd);
+        String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity> paidBills = taxBillService
+                .getPaidBills(cccd);
         return ResponseEntity.ok(paidBills);
     }
 
     /**
-     * Cập nhật thông tin tờ khai trong quá trình kiểm duyệt (dành cho Cán bộ thuế).
-     * Chỉ TAX_OFFICER/ADMIN mới có quyền sửa thông tin nhỏ trong tờ khai.
+     * Cap nhat thAng tin to khai trong qua trinh kiem duyet (d nh cho
+     * Can bo thua).
+     * Cho TAX_OFFICER/ADMIN moi co quyon soa thAng tin nho trong to
+     * khai.
      */
     @PutMapping("/declarations/{id}/update-info")
     @PreAuthorize("hasAnyRole('ADMIN', 'TAX_OFFICER')")
-    @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Cập nhật thông tin tờ khai")
+    @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Cap nhat thAng tin to khai")
     public ResponseEntity<?> updateDeclarationInfo(
             @PathVariable Integer id,
             @RequestBody Map<String, Object> updates) {
 
-        com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity entity =
-            taxDeclarationService.getRepository().findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tờ khai"));
+        com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity entity = taxDeclarationService
+                .getRepository().findById(id)
+                .orElseThrow(() -> new RuntimeException("KhAng tim thay to khai"));
 
-        // Chỉ cho phép sửa các trường an toàn khi đang kiểm duyệt
+        // Cho cho phAp soa cac truong an to n khi dang kiem duyet
         if (updates.containsKey("declaredPurpose")) {
             entity.setDeclaredPurpose((String) updates.get("declaredPurpose"));
         }
@@ -208,13 +223,13 @@ public class TaxController {
         }
 
         taxDeclarationService.getRepository().save(entity);
-        return ResponseEntity.ok(Map.of("message", "Cập nhật thông tin tờ khai thành công", "id", id));
+        return ResponseEntity.ok(Map.of("message", "Cap nhat thAng tin to khai th nh cAng", "id", id));
     }
 
     /**
-     * Xem toàn bộ hóa đơn thuế.
+     * Xem to n bo hoa don thua.
      */
-    @Operation(summary = "Danh sách hóa đơn", description = "Cán bộ thuế xem danh sách tất cả hóa đơn")
+    @Operation(summary = "Danh sach hoa don", description = "Can bo thua xem danh sach tat ca hoa don")
     @GetMapping("/bills/all")
     @PreAuthorize("hasRole('TAX_OFFICER')")
     public ResponseEntity<List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity>> getAllBills() {
@@ -222,27 +237,29 @@ public class TaxController {
     }
 
     /**
-     * Xuất dữ liệu hồ sơ thuế.
+     * Xuat du lieu ho so thua.
      */
-    @Operation(summary = "Xuất dữ liệu", description = "Cán bộ thuế xuất dữ liệu ra file CSV")
+    @Operation(summary = "Xuat du lieu", description = "Can bo thua xuat du lieu ra file CSV")
     @GetMapping(value = "/export/data", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @PreAuthorize("hasRole('TAX_OFFICER')")
     public ResponseEntity<byte[]> exportData() {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
-        log.info("Cán bộ thuế {} đang xuất dữ liệu hồ sơ thuế", cccd);
+        log.info("Can bo thua {} dang xuat du lieu ho so thua", cccd);
 
         StringBuilder csvContent = new StringBuilder();
-        csvContent.append("ID,CCCD,Trạng thái,Thời gian nộp\n");
+        csvContent.append("ID,CCCD,Trang thai,Thoi gian nop\n");
 
-        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity> records = recordJpaRepository.findAll();
+        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity> records = recordJpaRepository
+                .findAll();
         for (com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity r : records) {
             csvContent.append(r.getRecordId()).append(",")
-                      .append(r.getCitizenId()).append(",")
-                      .append(r.getCurrentStatus()).append(",")
-                      .append(r.getSubmittedAt()).append("\n");
+                    .append(r.getCitizenId()).append(",")
+                    .append(r.getCurrentStatus()).append(",")
+                    .append(r.getSubmittedAt()).append("\n");
         }
 
-        auditLogService.log("EXPORT_DATA", "RECORDS", "ALL", "Cán bộ thuế " + cccd + " đã thực hiện xuất dữ liệu hồ sơ thuế");
+        auditLogService.log("EXPORT_DATA", "RECORDS", "ALL",
+                "Can bo thua " + cccd + " dA thoc hien xuat du lieu ho so thua");
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"tax_records_export.csv\"")

@@ -27,32 +27,33 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * File Controller – Quản lý upload/download file vật lý.
+ * File Controller a Quan ly upload/download file vat ly.
  *
  * <ul>
- *   <li>POST /api/files/upload     – Upload file, lưu vào /uploads, tạo bản ghi attachments</li>
- *   <li>GET  /api/files/{filename} – Download/xem file đã upload</li>
- *   <li>GET  /api/files/my-files   – Danh sách file của người dùng hiện tại</li>
- *   <li>DELETE /api/files/{id}     – Xóa file (xóa bản ghi + file vật lý)</li>
+ *   <li>POST /api/files/upload     a Upload file, luu v o /uploads, tao ban ghi attachments</li>
+ *   <li>GET  /api/files/{filename} a Download/xem file dA upload</li>
+ *   <li>GET  /api/files/my-files   a Danh sach file coa nguoi dAng hien tai</li>
+ *   <li>DELETE /api/files/{id}     a Xoa file (xoa ban ghi + file vat ly)</li>
  * </ul>
  */
 @RestController
 @RequestMapping("/api/files")
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class FileController {
 
     private final AttachmentJpaRepository attachmentJpaRepository;
 
-    /** Thư mục lưu file vật lý, cấu hình trong application.yml. Mặc định: ./uploads */
+    /** Thu moc luu file vat ly, cau hinh trong application.yml. Mac dinh: ./uploads */
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
-    /** Base URL của server, dùng để tạo file_url trả về cho Frontend */
+    /** Base URL coa server, dAng de tao file_url tra vo cho Frontend */
     @Value("${app.server.base-url:http://localhost:8080}")
     private String serverBaseUrl;
 
-    // Các định dạng file được phép upload
+    // Cac dinh dang file duoc phAp upload
     private static final long MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024L; // 20 MB
     private static final List<String> ALLOWED_CONTENT_TYPES = List.of(
             "image/jpeg", "image/png", "image/gif", "image/webp",
@@ -63,24 +64,24 @@ public class FileController {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // POST /api/files/upload
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
     /**
-     * Upload file lên server.
+     * Upload file lAn server.
      *
      * <ol>
-     *   <li>Validate file (kích thước, loại MIME)</li>
-     *   <li>Tạo tên file duy nhất (UUID + extension)</li>
-     *   <li>Lưu file vào thư mục /uploads trên server</li>
-     *   <li>Tạo bản ghi trong bảng attachments</li>
-     *   <li>Trả về file_url để Frontend sử dụng</li>
+     *   <li>Validate file (kAch thuoc, loai MIME)</li>
+     *   <li>Tao tAn file duy nhat (UUID + extension)</li>
+     *   <li>Luu file v o thu moc /uploads trAn server</li>
+     *   <li>Tao ban ghi trong bang attachments</li>
+     *   <li>Tra vo file_url de Frontend so dong</li>
      * </ol>
      *
-     * @param file             File cần upload (multipart/form-data)
-     * @param relatedEntityType Loại thực thể liên kết (LAND_PARCEL, RECORD,...) - tuỳ chọn
-     * @param relatedEntityId   ID thực thể liên kết - tuỳ chọn
+     * @param file             File can upload (multipart/form-data)
+     * @param relatedEntityType Loai thoc the liAn kat (LAND_PARCEL, RECORD,...) - tuy chon
+     * @param relatedEntityId   ID thoc the liAn kat - tuy chon
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadFile(
@@ -90,28 +91,28 @@ public class FileController {
 
         String uploaderCccd = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-        log.info("POST /api/files/upload — uploader={}, originalName={}, size={}",
+        log.info("POST /api/files/upload - uploader={}, originalName={}, size={}",
                 uploaderCccd, file.getOriginalFilename(), file.getSize());
 
-        // ── 1. Validate file ──────────────────────────────────────────
+        // aa 1. Validate file aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "File không được để trống"));
+            return ResponseEntity.badRequest().body(Map.of("error", "File khAng duoc de trong"));
         }
 
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", String.format("File vượt quá kích thước tối đa %d MB", MAX_FILE_SIZE_BYTES / 1024 / 1024)
+                    "error", String.format("File vuot qua kAch thuoc toi da %d MB", MAX_FILE_SIZE_BYTES / 1024 / 1024)
             ));
         }
 
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Định dạng file không được hỗ trợ. Chỉ chấp nhận: ảnh, PDF, Word, Excel"
+                    "error", "inh dang file khAng duoc ho tro. Cho chap nhan: anh, PDF, Word, Excel"
             ));
         }
 
-        // ── 2. Tạo tên file duy nhất ──────────────────────────────────
+        // aa 2. Tao tAn file duy nhat aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
         String originalFilename = file.getOriginalFilename() != null
                 ? file.getOriginalFilename() : "unknown";
         String extension = "";
@@ -123,23 +124,23 @@ public class FileController {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String storedFilename = timestamp + "_" + UUID.randomUUID().toString().substring(0, 8) + extension;
 
-        // ── 3. Lưu file vào thư mục /uploads ─────────────────────────
+        // aa 3. Luu file v o thu moc /uploads aaaaaaaaaaaaaaaaaaaaaaaaa
         try {
             Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
             Files.createDirectories(uploadPath);
 
             Path targetPath = uploadPath.resolve(storedFilename);
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            log.info("Đã lưu file vật lý: {}", targetPath);
+            log.info("A luu file vat ly: {}", targetPath);
 
         } catch (IOException e) {
-            log.error("Lỗi lưu file: {}", e.getMessage(), e);
+            log.error("Loi luu file: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of(
-                    "error", "Không thể lưu file lên server: " + e.getMessage()
+                    "error", "KhAng the luu file lAn server: " + e.getMessage()
             ));
         }
 
-        // ── 4. Tạo bản ghi trong bảng attachments ────────────────────
+        // aa 4. Tao ban ghi trong bang attachments aaaaaaaaaaaaaaaaaaaa
         String fileUrl = serverBaseUrl + "/api/files/" + storedFilename;
 
         AttachmentEntity attachment = AttachmentEntity.builder()
@@ -155,28 +156,28 @@ public class FileController {
                 .build();
 
         AttachmentEntity saved = attachmentJpaRepository.save(attachment);
-        log.info("Đã tạo bản ghi attachment id={}, fileUrl={}", saved.getAttachmentId(), fileUrl);
+        log.info("A tao ban ghi attachment id={}, fileUrl={}", saved.getAttachmentId(), fileUrl);
 
-        // ── 5. Trả về kết quả ─────────────────────────────────────────
+        // aa 5. Tra vo kat qua aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
         return ResponseEntity.ok(Map.of(
                 "attachmentId",    saved.getAttachmentId(),
                 "originalFilename", saved.getOriginalFilename(),
-                "file_url",        fileUrl,          // key "file_url" như spec yêu cầu
+                "file_url",        fileUrl,          // key "file_url" nhu spec yAu cau
                 "fileUrl",         fileUrl,
                 "contentType",     contentType,
                 "fileSize",        file.getSize(),
                 "uploadedAt",      saved.getUploadedAt().toString(),
-                "message",         "Upload file thành công"
+                "message",         "Upload file th nh cAng"
         ));
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // GET /api/files/{filename}
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
     /**
-     * Download hoặc xem file đã upload theo tên file đã lưu trên server.
-     * Frontend có thể dùng URL này để hiển thị ảnh hoặc tải tài liệu.
+     * Download hoac xem file dA upload theo tAn file dA luu trAn server.
+     * Frontend co the dAng URL n y de hien thi anh hoac tai t i lieu.
      */
     @GetMapping("/{filename:.+}")
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
@@ -186,7 +187,7 @@ public class FileController {
             Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
             Path filePath   = uploadPath.resolve(filename).normalize();
 
-            // Ngăn path traversal attack
+            // Ngn path traversal attack
             if (!filePath.startsWith(uploadPath)) {
                 return ResponseEntity.badRequest().build();
             }
@@ -202,37 +203,37 @@ public class FileController {
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
                     .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "inline; filename=\"" + resource.getFilename() + "\"")
+                            "inline; filename=\"" + (resource.getFilename() != null ? resource.getFilename() : "file") + "\"")
                     .body(resource);
 
         } catch (MalformedURLException e) {
-            log.error("URL không hợp lệ: {}", e.getMessage());
+            log.error("URL khAng hop le: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (IOException e) {
-            log.error("Lỗi đọc file: {}", e.getMessage());
+            log.error("Loi doc file: {}", e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // GET /api/files/my-files
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-    /** Lấy danh sách file mà người dùng hiện tại đã upload. */
+    /** Lay danh sach file m  nguoi dAng hien tai dA upload. */
     @GetMapping("/my-files")
     public ResponseEntity<?> getMyFiles() {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
-        log.info("GET /api/files/my-files — cccd={}", cccd);
+        log.info("GET /api/files/my-files - cccd={}", cccd);
 
         List<AttachmentEntity> myFiles = attachmentJpaRepository.findByUploadedBy(cccd);
         return ResponseEntity.ok(Map.of("data", myFiles, "total", myFiles.size()));
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // DELETE /api/files/{id}
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-    /** Xóa file (bản ghi DB + file vật lý). Chỉ chủ sở hữu hoặc ADMIN. */
+    /** Xoa file (ban ghi DB + file vat ly). Cho cho so huu hoac ADMIN. */
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteFile(@PathVariable Long id) {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -240,36 +241,37 @@ public class FileController {
                 .getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().contains("ADMIN"));
 
-        log.info("DELETE /api/files/delete/{} — requester={}", id, cccd);
+        log.info("DELETE /api/files/delete/{} - requester={}", id, cccd);
 
         return attachmentJpaRepository.findById(id)
                 .<ResponseEntity<?>>map(attachment -> {
-                    // Kiểm tra quyền
+                    // Kiem tra quyon
                     if (!isAdmin && !cccd.equals(attachment.getUploadedBy())) {
                         return ResponseEntity.status(403).body(Map.of(
-                                "error", "Bạn không có quyền xóa file này"
+                                "error", "Ban khAng co quyon xoa file n y"
                         ));
                     }
 
-                    // Xóa file vật lý
+                    // Xoa file vat ly
                     try {
                         Path filePath = Paths.get(uploadDir).toAbsolutePath()
                                 .resolve(attachment.getStoredFilename()).normalize();
                         Files.deleteIfExists(filePath);
-                        log.info("Đã xóa file vật lý: {}", filePath);
+                        log.info("A xoa file vat ly: {}", filePath);
                     } catch (IOException e) {
-                        log.warn("Không thể xóa file vật lý {}: {}", attachment.getStoredFilename(), e.getMessage());
+                        log.warn("KhAng the xoa file vat ly {}: {}", attachment.getStoredFilename(), e.getMessage());
                     }
 
-                    // Xóa bản ghi DB
+                    // Xoa ban ghi DB
                     attachmentJpaRepository.deleteById(id);
-                    log.info("Đã xóa bản ghi attachment id={}", id);
+                    log.info("A xoa ban ghi attachment id={}", id);
 
                     return ResponseEntity.ok(Map.of(
                             "deletedId", id,
-                            "message",   "Xóa file thành công"
+                            "message",   "Xoa file th nh cAng"
                     ));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 }
+

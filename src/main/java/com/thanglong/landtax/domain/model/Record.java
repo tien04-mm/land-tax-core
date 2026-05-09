@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Domain model đại diện cho hồ sơ/biên bản.
+ * Domain model dai dien cho ho so/bien ban.
  */
 @Getter
 @Setter
@@ -20,7 +20,7 @@ public class Record {
     private Long landParcelId;
     private Long citizenId;
     private String content;
-    private String attachmentUrl;        // URL tài liệu đính kèm (Cloudinary)
+    private String attachmentUrl;        // URL tai lieu dinh kem (Cloudinary)
     private String status;              // DRAFT, SUBMITTED, REVIEWED, CLOSED
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -20,7 +20,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 /**
- * Cấu hình Spring Security cho Land Tax Core Service.
+ * Cau hinh Spring Security cho Land Tax Core Service.
  */
 @Configuration
 @EnableWebSecurity
@@ -49,7 +49,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        .requestMatchers("/api/tax/declarations/**").permitAll() // Vẫn giữ permitAll cho các API khác của declarations (ví dụ: GET history)
+                        .requestMatchers("/api/mutation-requests/**").hasAnyRole("ADMIN", "LAND_OFFICER", "CITIZEN")
+                        .requestMatchers("/api/tax/declarations/**").permitAll() // Van giu permitAll cho cac API khac cua declarations (vi du: GET history)
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

@@ -6,7 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 
 /**
- * JPA Entity mapping với bảng tax_rates trong land_tax_management.sql.
+ * JPA Entity mapping voi bang tax_rates trong land_tax_management.sql.
  */
 @Entity
 @Table(name = "tax_rates")
@@ -26,7 +26,7 @@ public class TaxRateEntity {
     private String taxName;
 
     @Column(name = "rate_value", nullable = false, precision = 5, scale = 4)
-    private BigDecimal rateValue;               // Ví dụ: 0.0003 cho 0.03%
+    private BigDecimal rateValue;               // Vi du: 0.0003 cho 0.03%
 
     @Column(name = "rate_code", nullable = false, unique = true, length = 50)
     private String rateCode;

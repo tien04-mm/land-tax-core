@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Entity lưu từng dòng trong file sao kê ngân hàng đã upload.
- * Sau khi so khớp với tax_bills, trường matchStatus sẽ là MATCHED hoặc DISCREPANCY.
+ * Entity luu tung dong trong file sao ke ngan hang da upload.
+ * Sau khi so khop voi tax_bills, truong matchStatus se la MATCHED hoac DISCREPANCY.
  */
 @Entity
 @Table(name = "reconciliation_statements")
@@ -23,23 +23,23 @@ public class ReconciliationStatementEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    /** Mã giao dịch ngân hàng (orderCode / transaction reference) */
+    /** Ma giao dich ngan hang (orderCode / transaction reference) */
     @Column(name = "bank_transaction_ref", length = 100)
     private String bankTransactionRef;
 
-    /** Số tiền trong sao kê ngân hàng */
+    /** So tien trong sao ke ngan hang */
     @Column(name = "bank_amount", precision = 18, scale = 2)
     private BigDecimal bankAmount;
 
-    /** Ngày giao dịch trong sao kê */
+    /** Ngay giao dich trong sao ke */
     @Column(name = "bank_transaction_date")
     private LocalDateTime bankTransactionDate;
 
-    /** Nội dung chuyển khoản */
+    /** Noi dung chuyen khoan */
     @Column(name = "bank_description", columnDefinition = "TEXT")
     private String bankDescription;
 
-    /** bill_id trong tax_bills nếu tìm thấy khớp */
+    /** bill_id trong tax_bills neu tim thay khop */
     @Column(name = "matched_bill_id")
     private Integer matchedBillId;
 
@@ -47,11 +47,11 @@ public class ReconciliationStatementEntity {
     @Column(name = "match_status", length = 30)
     private String matchStatus;
 
-    /** Ghi chú sai lệch (nếu DISCREPANCY) */
+    /** Ghi chu sai lech (neu DISCREPANCY) */
     @Column(name = "discrepancy_note", columnDefinition = "TEXT")
     private String discrepancyNote;
 
-    /** Tên file sao kê gốc */
+    /** Ten file sao ke goc */
     @Column(name = "source_file", length = 255)
     private String sourceFile;
 

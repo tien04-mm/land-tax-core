@@ -14,9 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Service xử lý import hàng loạt dữ liệu thửa đất từ file Excel (.xlsx).
+ * Service xu ly import hang loat du lieu thua dat tu file Excel (.xlsx).
  *
- * <p><b>Định dạng file Excel mẫu (header row - row 1):</b></p>
+ * <p><b>Dinh dang file Excel mau (header row - row 1):</b></p>
  * <pre>
  * | parcelNumber | mapSheetNumber | landTypeId | areaId | areaSize | address | usageType | usageDuration | certificateNumber | ownerCccd |
  * </pre>
@@ -29,13 +29,13 @@ public class LandParcelImportService {
     private final LandParcelJpaRepository landParcelJpaRepository;
 
     /**
-     * Đọc file Excel, parse từng dòng dữ liệu và lưu vào database.
+     * Doc file Excel, parse tung dong du lieu va luu vao database.
      *
-     * @param file File Excel .xlsx được upload bởi LAND_OFFICER
-     * @return Số lượng bản ghi đã import thành công
+     * @param file File Excel .xlsx duoc upload boi LAND_OFFICER
+     * @return So luong ban ghi da import thanh cong
      */
     public int importFromExcel(MultipartFile file) throws Exception {
-        log.info("Bắt đầu import Excel: fileName={}, size={}KB", file.getOriginalFilename(), file.getSize() / 1024);
+        log.info("Starting Excel import: fileName={}, size={}KB", file.getOriginalFilename(), file.getSize() / 1024);
 
         List<LandParcelEntity> parcels = new ArrayList<>();
 
@@ -43,27 +43,27 @@ public class LandParcelImportService {
             Sheet sheet = workbook.getSheetAt(0);
 
             for (Row row : sheet) {
-                // Bỏ qua header row (row 0)
+                // Bo qua header row (row 0)
                 if (row.getRowNum() == 0) continue;
 
-                // Bỏ qua dòng trống
+                // Bo qua dong trong
                 if (isRowEmpty(row)) continue;
 
                 try {
                     LandParcelEntity entity = parseRow(row);
                     parcels.add(entity);
                 } catch (Exception e) {
-                    log.warn("Lỗi khi parse dòng {}: {}", row.getRowNum() + 1, e.getMessage());
-                    // Tiếp tục dòng tiếp theo thay vì abort toàn bộ
+                    log.warn("Error parsing row {}: {}", row.getRowNum() + 1, e.getMessage());
+                    // Continue with next row instead of aborting all
                 }
             }
 
             if (parcels.isEmpty()) {
-                throw new IllegalArgumentException("File Excel không có dữ liệu hợp lệ");
+                throw new IllegalArgumentException("File Excel does not contain valid data");
             }
 
             List<LandParcelEntity> saved = landParcelJpaRepository.saveAll(parcels);
-            log.info("Import thành công {} thửa đất vào database", saved.size());
+            log.info("Successfully imported {} land parcels into database", saved.size());
             return saved.size();
         }
     }

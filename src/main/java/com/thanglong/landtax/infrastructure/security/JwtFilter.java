@@ -23,23 +23,23 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 /**
- * JWT Filter xác thực token từ VNeID Auth Service gửi sang.
+ * JWT Filter xac thuc token tu VNeID Auth Service gui sang.
  *
- * <p><b>Luồng xử lý:</b></p>
+ * <p><b>Luong xu ly:</b></p>
  * <ol>
- *   <li>Trích xuất token từ Header: {@code Authorization: Bearer <token>}</li>
- *   <li>Verify chữ ký bằng shared secret key (cùng key với vneid-auth-service)</li>
- *   <li>Trích xuất {@code cccd_number} từ Subject của token</li>
- *   <li>Trích xuất {@code role} từ custom claim</li>
- *   <li>Đặt Authentication vào SecurityContext với principal = cccd_number</li>
+ *   <li>Trich xuat token tu Header: {@code Authorization: Bearer <token>}</li>
+ *   <li>Verify chu ky bang shared secret key (cung key voi vneid-auth-service)</li>
+ *   <li>Trich xuat {@code cccd_number} tu Subject cua token</li>
+ *   <li>Trich xuat {@code role} tu custom claim</li>
+ *   <li>Dat Authentication vao SecurityContext voi principal = cccd_number</li>
  * </ol>
  *
- * <p>Sau khi filter chạy xong, các controller có thể lấy cccd_number qua:</p>
+ * <p>Sau khi filter chay xong, cac controller co the lay cccd_number qua:</p>
  * <pre>{@code
  * String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
  * }</pre>
  *
- * <p>Hoặc inject trực tiếp trong controller:</p>
+ * <p>Hoac inject truc tiep trong controller:</p>
  * <pre>{@code
  * @GetMapping("/me")
  * public ResponseEntity<?> getMe(@AuthenticationPrincipal String cccdNumber) { ... }
@@ -66,26 +66,25 @@ public class JwtFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String token = extractToken(request);
-
         if (StringUtils.hasText(token)) {
             try {
-                // Verify token bằng shared secret key
+                // Verify token bang shared secret key
                 Claims claims = Jwts.parser()
                         .verifyWith(secretKey)
                         .build()
                         .parseSignedClaims(token)
                         .getPayload();
 
-                // ===== TRÍCH XUẤT CCCD_NUMBER TỪ TOKEN =====
-                // Cách 1: Lấy từ Subject (primary)
+                // ===== TRICH XUAT CCCD_NUMBER TU TOKEN =====
+                // Cach 1: Lay tu Subject (primary)
                 String cccdNumber = claims.getSubject();
 
-                // Cách 2 (fallback): Lấy từ custom claim "cccd" nếu Subject rỗng
+                // Cach 2 (fallback): Lay tu custom claim "cccd" neu Subject rong
                 if (!StringUtils.hasText(cccdNumber)) {
                     cccdNumber = claims.get("cccd", String.class);
                 }
 
-                // Trích xuất các thông tin bổ sung
+                // Trich xuat cac thong tin bo sung
                 String activeRole = claims.get("activeRole", String.class);
                 if (!StringUtils.hasText(activeRole)) {
                     activeRole = claims.get("role", String.class); // Fallback
@@ -97,20 +96,20 @@ public class JwtFilter extends OncePerRequestFilter {
                 java.util.List<String> roles = claims.get("roles", java.util.List.class);
 
                 if (StringUtils.hasText(cccdNumber) && StringUtils.hasText(activeRole)) {
-                    // Tạo Authentication object với principal = cccd_number
+                    String authority = activeRole.startsWith("ROLE_") ? activeRole : "ROLE_" + activeRole;
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    cccdNumber,                 // Principal = Số CCCD
-                                    null,                       // Credentials (không cần)
-                                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + activeRole))
+                                    cccdNumber,                 // Principal = So CCCD
+                                    null,                       // Credentials (khong can)
+                                    Collections.singletonList(new SimpleGrantedAuthority(authority))
                             );
 
-                    // Lưu thêm thông tin vào details để controller có thể truy cập
+                    // Luu them thong tin vao details de controller co the truy cap
                     authentication.setDetails(new JwtUserDetails(cccdNumber, email, activeRole, roles, citizenId));
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                    log.debug("Authenticated user - CCCD: {}, email: {}, activeRole: {}", cccdNumber, email, activeRole);
+                    log.info("Authenticated user - CCCD: {}, activeRole: {}, authority: {}", cccdNumber, activeRole, authority);
                 }
 
             } catch (ExpiredJwtException e) {
@@ -130,7 +129,7 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Trích xuất Bearer token từ Header Authorization.
+     * Trich xuat Bearer token tu Header Authorization.
      */
     private String extractToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
@@ -141,7 +140,7 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Inner record để lưu trữ thông tin user đã xác thực từ JWT.
+     * Inner record de luu tru thong tin user da xac thuc tu JWT.
      */
     public record JwtUserDetails(String cccdNumber, String email, String activeRole, java.util.List<String> roles, Long citizenId) {
     }

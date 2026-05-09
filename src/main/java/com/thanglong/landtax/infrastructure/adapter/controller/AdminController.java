@@ -16,8 +16,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRepository;
+import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository;
+import com.thanglong.landtax.infrastructure.adapter.client.VneidServiceClient;
+import com.thanglong.landtax.usecase.service.AuditLogService;
+import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AuditLogJpaRepository;
+import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AuditLogEntity;
+
 /**
- * Controller cho các API thống kê báo cáo (Dashboard) dành cho Cán bộ / Admin.
+ * Controller cho cac API thong ke bao cao (Dashboard) danh cho Can bo / Admin.
  */
 @RestController
 @RequestMapping("/api/admin")
@@ -26,27 +33,28 @@ import java.util.Map;
 public class AdminController {
 
     private final StatisticsService statisticsService;
-    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRepository accountJpaRepository;
-    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository citizenLocalJpaRepository;
-    private final com.thanglong.landtax.infrastructure.adapter.client.VneidServiceClient vneidServiceClient;
-    private final com.thanglong.landtax.usecase.service.AuditLogService auditLogService;
-    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AuditLogJpaRepository auditLogJpaRepository;
+    private final AccountJpaRepository accountJpaRepository;
+    private final CitizenLocalJpaRepository citizenLocalJpaRepository;
+    private final VneidServiceClient vneidServiceClient;
+    private final AuditLogService auditLogService;
+    private final AuditLogJpaRepository auditLogJpaRepository;
 
     @org.springframework.beans.factory.annotation.Value("${internal.api.secret:VNeIDInternalSecretKey2025}")
     private String internalSecret;
 
     /**
-     * API Thống kê tổng quan cho Dashboard.
-     * Yêu cầu quyền ADMIN hoặc TAX_OFFICER.
+     * API Thong kA tong quan cho Dashboard.
+     * YAu cau quyon ADMIN hoac TAX_OFFICER.
      */
     @GetMapping("/statistics")
-    // @PreAuthorize("hasAnyAuthority('ADMIN', 'TAX_OFFICER', 'ROLE_ADMIN', 'ROLE_TAX_OFFICER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TAX_OFFICER')")
     public ResponseEntity<Map<String, Object>> getDashboardStatistics() {
         Map<String, Object> stats = statisticsService.getDashboardStatistics();
         return ResponseEntity.ok(stats);
     }
 
     @PutMapping("/users/{cccd}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateUserStatus(@PathVariable String cccd, @RequestParam boolean active) {
         var citizenOpt = citizenLocalJpaRepository.findByCccdNumber(cccd);
         if (citizenOpt.isPresent()) {
@@ -65,9 +73,9 @@ public class AdminController {
             // Ignore if vneid is not reachable in local dev
         }
         
-        auditLogService.log("UPDATE_USER_STATUS", "ACCOUNT", cccd, "Cập nhật trạng thái active = " + active);
+        auditLogService.log("UPDATE_USER_STATUS", "ACCOUNT", cccd, "Cap nhat trang thai active = " + active);
 
-        return ResponseEntity.ok(Map.of("message", "Cập nhật trạng thái người dùng thành công"));
+        return ResponseEntity.ok(Map.of("message", "Cap nhat trang thai nguoi dAng th nh cAng"));
     }
 
     @PutMapping("/users/{cccd}/role")
@@ -97,14 +105,14 @@ public class AdminController {
             // Ignore if vneid is not reachable in local dev
         }
 
-        auditLogService.log("UPDATE_USER_ROLE", "ACCOUNT", cccd, "Cập nhật role = " + role);
+        auditLogService.log("UPDATE_USER_ROLE", "ACCOUNT", cccd, "Cap nhat role = " + role);
 
-        return ResponseEntity.ok(Map.of("message", "Cập nhật role người dùng thành công"));
+        return ResponseEntity.ok(Map.of("message", "Cap nhat role nguoi dAng th nh cAng"));
     }
 
     /**
-     * GET /api/admin/audit-logs — Xem nhật ký hệ thống (Audit Trail).
-     * Yêu cầu quyền ROLE_ADMIN.
+     * GET /api/admin/audit-logs - Xem nhat ky he thong (Audit Trail).
+     * YAu cau quyon ROLE_ADMIN.
      */
     @GetMapping("/audit-logs")
     @PreAuthorize("hasRole('ADMIN')")
@@ -114,7 +122,7 @@ public class AdminController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate) {
         
-        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.AuditLogEntity> logs = 
+        List<AuditLogEntity> logs = 
             auditLogJpaRepository.findWithFilters(userCccd, action, fromDate, toDate);
 
         return ResponseEntity.ok(Map.of(
@@ -123,3 +131,4 @@ public class AdminController {
         ));
     }
 }
+

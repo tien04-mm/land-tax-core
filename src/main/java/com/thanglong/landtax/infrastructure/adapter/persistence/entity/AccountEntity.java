@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * JPA Entity mapping chính xác với bảng accounts trong land_tax_management.sql.
+ * JPA Entity mapping chinh xac voi bang accounts trong land_tax_management.sql.
  */
 @Entity
 @Table(name = "accounts")

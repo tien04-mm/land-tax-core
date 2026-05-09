@@ -6,8 +6,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * JPA Entity mapping chính xác với bảng processing_logs trong land_tax_management.sql.
- * Lưu nhật ký xử lý hồ sơ: ai duyệt, bước nào, trạng thái cũ/mới, ghi chú.
+ * JPA Entity mapping chinh xac voi bang processing_logs trong land_tax_management.sql.
+ * Luu nhat ky xu ly ho so: ai duyet, buoc nao, trang thai cu/moi, ghi chu.
  */
 @Entity
 @Table(name = "processing_logs")
@@ -24,10 +24,10 @@ public class ProcessingLogEntity {
     private Integer plogId;
 
     @Column(name = "record_id", nullable = false)
-    private Integer recordId;                   // FK → records.record_id
+    private Integer recordId;                   // FK  records.record_id
 
     @Column(name = "processor_account_id", nullable = false)
-    private Integer processorAccountId;         // FK → accounts.account_id (người duyệt)
+    private Integer processorAccountId;         // FK  accounts.account_id (nguoi duyet)
 
     @Column(name = "processing_step", nullable = false, length = 100)
     private String processingStep;              // APPROVE, REJECT, REVIEW, ...

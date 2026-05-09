@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Cấu hình Swagger/OpenAPI 3 cho Land Tax Core Service.
+ * Cau hinh Swagger/OpenAPI 3 cho Land Tax Core Service.
  */
 @Configuration
 public class OpenApiConfig {
@@ -18,7 +18,7 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Hệ thống Quản lý Thuế Đất")
+                        .title("He thong Quan ly Thue Dat")
                         .version("1.0")
                         .description("API documentation for Land Tax Management Core Service (Port 8080)"))
                 .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))

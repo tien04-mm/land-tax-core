@@ -6,8 +6,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * JPA Entity cho bảng attachments.
- * Lưu thông tin về file được upload lên server.
+ * JPA Entity cho bang attachments.
+ * Luu thong tin ve file duoc upload len server.
  */
 @Entity
 @Table(name = "attachments")
@@ -23,39 +23,39 @@ public class AttachmentEntity {
     @Column(name = "attachment_id")
     private Long attachmentId;
 
-    /** Tên file gốc do người dùng upload */
+    /** Ten file goc do nguoi dung upload */
     @Column(name = "original_filename", nullable = false, length = 255)
     private String originalFilename;
 
-    /** Tên file đã lưu trên server (có thể được đổi tên để tránh xung đột) */
+    /** Ten file da luu tren server (co the duoc doi ten de tranh xung dot) */
     @Column(name = "stored_filename", nullable = false, length = 255)
     private String storedFilename;
 
-    /** URL hoàn chỉnh để truy cập file */
+    /** URL hoan chinh de truy cap file */
     @Column(name = "file_url", nullable = false, length = 500)
     private String fileUrl;
 
-    /** MIME type của file (image/jpeg, application/pdf, ...) */
+    /** MIME type cua file (image/jpeg, application/pdf, ...) */
     @Column(name = "content_type", length = 100)
     private String contentType;
 
-    /** Kích thước file (byte) */
+    /** Kich thuoc file (byte) */
     @Column(name = "file_size")
     private Long fileSize;
 
-    /** CCCD của người upload */
+    /** CCCD cua nguoi upload */
     @Column(name = "uploaded_by", length = 20)
     private String uploadedBy;
 
-    /** Thời gian upload */
+    /** Thoi gian upload */
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
 
-    /** ID của thực thể liên kết (ví dụ: land_parcel_id, record_id) - tùy chọn */
+    /** ID cua thuc the lien ket (vi du: land_parcel_id, record_id) - tuy chon */
     @Column(name = "related_entity_id")
     private Long relatedEntityId;
 
-    /** Loại thực thể liên kết (LAND_PARCEL, RECORD, ...) - tùy chọn */
+    /** Loai thuc the lien ket (LAND_PARCEL, RECORD, ...) - tuy chon */
     @Column(name = "related_entity_type", length = 50)
     private String relatedEntityType;
 }

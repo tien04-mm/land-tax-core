@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 /**
- * Use case xử lý duyệt tờ khai thuế.
+ * Use case xu ly duyet to khai thue.
  */
 @Service
 @RequiredArgsConstructor
@@ -25,10 +25,10 @@ public class ApproveTaxUseCase {
     @Transactional
     public TaxDeclarationDTO approveTaxRecord(Long taxRecordId) {
         TaxRecord taxRecord = taxRecordRepository.findById(taxRecordId)
-                .orElseThrow(() -> new RuntimeException("Bản ghi thuế không tồn tại: " + taxRecordId));
+                .orElseThrow(() -> new RuntimeException("Tax record not found with ID: " + taxRecordId));
 
         if (!"PENDING".equals(taxRecord.getStatus())) {
-            throw new RuntimeException("Chỉ có thể duyệt tờ khai ở trạng thái PENDING");
+            throw new RuntimeException("Only PENDING tax records can be approved");
         }
 
         taxRecord.setStatus("APPROVED");
@@ -44,7 +44,7 @@ public class ApproveTaxUseCase {
     @Transactional
     public TaxDeclarationDTO rejectTaxRecord(Long taxRecordId, String reason) {
         TaxRecord taxRecord = taxRecordRepository.findById(taxRecordId)
-                .orElseThrow(() -> new RuntimeException("Bản ghi thuế không tồn tại: " + taxRecordId));
+                .orElseThrow(() -> new RuntimeException("Tax record not found with ID: " + taxRecordId));
 
         taxRecord.setStatus("REJECTED");
         taxRecord.setNotes(reason);

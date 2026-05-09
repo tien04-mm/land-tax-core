@@ -20,9 +20,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Service đối soát sao kê ngân hàng với hóa đơn thuế trong hệ thống.
+ * Service doi soat sao ke ngan hang voi hoa don thue trong he thong.
  *
- * <p><b>Định dạng file CSV mẫu (header row):</b></p>
+ * <p><b>Dinh dang file CSV mau (header row):</b></p>
  * <pre>
  * transactionRef,amount,transactionDate,description
  * ORDER-001,1500000,2025-01-10,Nop thue dat
@@ -38,29 +38,29 @@ public class ReconciliationService {
     private final TaxBillRepository taxBillRepository;
 
     /**
-     * Đọc file CSV sao kê, parse và so khớp với bảng tax_bills.
+     * Doc file CSV sao ke, parse va so khop voi bang tax_bills.
      *
-     * @param file File CSV được upload bởi TAX_OFFICER
-     * @return Map thống kê kết quả: tổng dòng, MATCHED, DISCREPANCY, UNMATCHED
+     * @param file File CSV duoc upload boi TAX_OFFICER
+     * @return Map thong ke ket qua: tong dong, MATCHED, DISCREPANCY, UNMATCHED
      */
     @Transactional
     public Map<String, Object> processReconciliation(MultipartFile file) throws Exception {
         String sourceFileName = java.util.Optional.ofNullable(file.getOriginalFilename()).orElse("unknown.csv");
-        log.info("Bắt đầu đối soát sao kê: file={}, size={}KB", sourceFileName, file.getSize() / 1024);
+        log.info("Starting bank reconciliation: file={}, size={}KB", sourceFileName, file.getSize() / 1024);
 
         List<ReconciliationStatementEntity> statements = parseCsv(file, sourceFileName);
 
         int matched = 0, discrepancy = 0, unmatched = 0;
 
         for (ReconciliationStatementEntity stmt : statements) {
-            // Tìm hóa đơn theo transactionRef (orderCode) hoặc billId embedded trong nội dung
+            // Tim hoa don theo transactionRef (orderCode) hoac billId embedded trong noi dung
             Optional<TaxBillEntity> billOpt = findMatchingBill(stmt);
 
             if (billOpt.isPresent()) {
                 TaxBillEntity bill = billOpt.get();
                 stmt.setMatchedBillId(bill.getBillId());
 
-                // Kiểm tra số tiền khớp không (±1000 VNĐ tolerance)
+                // Kiem tra so tien khop khong (+/- 1000 VND tolerance)
                 BigDecimal diff = stmt.getBankAmount().subtract(bill.getAmount()).abs();
                 if (diff.compareTo(new BigDecimal("1000")) <= 0) {
                     stmt.setMatchStatus("MATCHED");
@@ -69,7 +69,7 @@ public class ReconciliationService {
                 } else {
                     stmt.setMatchStatus("DISCREPANCY");
                     stmt.setDiscrepancyNote(String.format(
-                            "Sai lệch số tiền: sao kê=%s, hóa đơn=%s, chênh lệch=%s",
+                            "Amount discrepancy: bank=%s, bill=%s, diff=%s",
                             stmt.getBankAmount(), bill.getAmount(), diff));
                     discrepancy++;
                     log.warn("DISCREPANCY: ref={}, billId={}, diff={}", stmt.getBankTransactionRef(), bill.getBillId(), diff);
@@ -89,16 +89,16 @@ public class ReconciliationService {
                 "matched", matched,
                 "discrepancy", discrepancy,
                 "unmatched", unmatched,
-                "message", "Đối soát hoàn tất"
+                "message", "Reconciliation completed"
         );
 
-        log.info("Kết quả đối soát: total={}, matched={}, discrepancy={}, unmatched={}",
+        log.info("Reconciliation results: total={}, matched={}, discrepancy={}, unmatched={}",
                 statements.size(), matched, discrepancy, unmatched);
         return result;
     }
 
     /**
-     * Lấy danh sách các dòng đối soát có sai lệch để cán bộ xử lý thủ công.
+     * Lay danh sach cac dong doi soat co sai lech de can bo xu ly thu cong.
      */
     public List<ReconciliationStatementEntity> getDiscrepancies() {
         return reconciliationRepository.findByMatchStatus("DISCREPANCY");
@@ -115,13 +115,13 @@ public class ReconciliationService {
 
             while ((line = reader.readLine()) != null) {
                 lineNum++;
-                if (isHeader) { isHeader = false; continue; } // bỏ header
+                if (isHeader) { isHeader = false; continue; } // skip header
                 if (line.isBlank()) continue;
 
                 try {
                     String[] cols = line.split(",", -1);
                     if (cols.length < 3) {
-                        log.warn("Dòng {} không đủ cột, bỏ qua: {}", lineNum, line);
+                        log.warn("Line {} missing columns, skipping: {}", lineNum, line);
                         continue;
                     }
 
@@ -138,17 +138,17 @@ public class ReconciliationService {
                             .build();
                     list.add(stmt);
                 } catch (Exception e) {
-                    log.warn("Lỗi parse dòng {}: {} - {}", lineNum, line, e.getMessage());
+                    log.warn("Error parsing line {}: {} - {}", lineNum, line, e.getMessage());
                 }
             }
         }
 
-        if (list.isEmpty()) throw new IllegalArgumentException("File CSV không có dữ liệu hợp lệ");
+        if (list.isEmpty()) throw new IllegalArgumentException("Invalid CSV file data");
         return list;
     }
 
     private Optional<TaxBillEntity> findMatchingBill(ReconciliationStatementEntity stmt) {
-        // Thử parse billId từ transactionRef (VD: "BILL-123" hoặc "123")
+        // Try parsing billId from transactionRef (e.g. "BILL-123" or "123")
         try {
             String ref = stmt.getBankTransactionRef();
             String numStr = ref.replaceAll("[^0-9]", "");
@@ -159,11 +159,12 @@ public class ReconciliationService {
             }
         } catch (NumberFormatException ignored) {}
 
-        // Tìm theo description chứa billId
+        // Find by description containing billId
         String desc = java.util.Optional.ofNullable(stmt.getBankDescription()).orElse("");
         List<TaxBillEntity> allBills = taxBillRepository.findAll();
         return allBills.stream()
                 .filter(b -> desc.contains(String.valueOf(b.getBillId())))
                 .findFirst();
     }
+
 }

@@ -33,17 +33,17 @@ import java.util.Set;
 import java.math.BigDecimal;
 
 /**
- * Use case xử lý DUYỆT tờ khai thuế đất.
+ * Use case xu ly DUYET to khai thue dat.
  *
- * <p><b>Chỉ cho phép:</b> TAX_OFFICER hoặc ADMIN</p>
+ * <p><b>Chi cho phep:</b> TAX_OFFICER hoac ADMIN</p>
  *
- * <p><b>Hành động:</b></p>
+ * <p><b>Hanh dong:</b></p>
  * <ol>
- *   <li>Kiểm tra quyền (role) của người duyệt</li>
- *   <li>Cập nhật records.current_status → APPROVED</li>
- *   <li>Cập nhật tax_payments.payment_status → AWAITING_PAYMENT</li>
- *   <li>Ghi nhật ký vào processing_logs</li>
- *   <li>Gửi thông báo cho người dân (notifications)</li>
+ *   <li>Kiem tra quyen (role) cua nguoi duyet</li>
+ *   <li>Cap nhat records.current_status -> APPROVED</li>
+ *   <li>Cap nhat tax_payments.payment_status -> AWAITING_PAYMENT</li>
+ *   <li>Ghi nhat ky vao processing_logs</li>
+ *   <li>Gui thong bao cho nguoi dan (notifications)</li>
  * </ol>
  */
 @Service
@@ -64,51 +64,51 @@ public class ApproveDeclarationUseCase {
     private final LandParcelJpaRepository landParcelJpaRepository;
     private final LandPriceJpaRepository landPriceJpaRepository;
 
-    /** Các role được phép duyệt tờ khai */
+    /** Cac role duoc phep duyet to khai */
     private static final Set<String> ALLOWED_ROLES = Set.of(
             "TAX_OFFICER", "ADMIN",
             "ROLE_TAX_OFFICER", "ROLE_ADMIN"
     );
 
     /**
-     * Duyệt tờ khai thuế.
+     * Duyet to khai thue.
      *
-     * @param recordId  ID tờ khai trong bảng records
-     * @param request   Ghi chú của cán bộ duyệt (tùy chọn)
-     * @return Map chứa thông tin kết quả duyệt
+     * @param recordId  ID to khai trong bang records
+     * @param request   Ghi chu cua can bo duyet (tuy chon)
+     * @return Map chua thong tin ket qua duyet
      */
     @Transactional
     public Map<String, Object> approveDeclaration(Integer recordId, ReviewDeclarationRequest request) {
 
-        // ===== BƯỚC 1: Kiểm tra quyền =====
+        // ===== BUOC 1: Kiem tra quyen =====
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         validateOfficerRole(auth);
 
         String cccdNumber = auth.getName();
         Integer officerCitizenId = syncUserFromVneidUseCase.syncAndGetCitizenId(cccdNumber);
 
-        // Lấy account_id của cán bộ duyệt
+        // Lay account_id cua can bo duyet
         AccountEntity officerAccount = accountJpaRepository.findByCitizenId(officerCitizenId)
                 .orElseThrow(() -> new RuntimeException(
-                        "Không tìm thấy tài khoản cán bộ cho citizenId: " + officerCitizenId));
+                        "Officer account not found for citizenId: " + officerCitizenId));
 
-        // ===== BƯỚC 2: Tìm và kiểm tra tờ khai =====
+        // ===== BUOC 2: Tim va kiem tra to khai =====
         RecordEntity record = recordJpaRepository.findById(recordId)
-                .orElseThrow(() -> new RuntimeException("Tờ khai không tồn tại: " + recordId));
+                .orElseThrow(() -> new RuntimeException("Record not found: " + recordId));
 
         String oldStatus = record.getCurrentStatus();
 
         if (!"VERIFIED".equals(oldStatus)) {
             throw new RuntimeException(
-                    "Chỉ có thể duyệt hồ sơ ở trạng thái VERIFIED. " +
-                            "Trạng thái hiện tại: " + oldStatus);
+                    "Only records with status VERIFIED can be approved. " +
+                            "Current status: " + oldStatus);
         }
 
-        // ===== BƯỚC 3: Cập nhật records → APPROVED =====
+        // ===== BUOC 3: Cap nhat records -> APPROVED =====
         record.setCurrentStatus("APPROVED");
         recordJpaRepository.save(record);
 
-        // Tìm và cập nhật TaxDeclarationEntity tương ứng
+        // Tim va cap nhat TaxDeclarationEntity tuong ung
         List<TaxDeclarationEntity> declarations = taxDeclarationRepository
                 .findByCitizenIdAndParcelIdAndStatus(record.getCitizenId(), record.getLandParcelId(), "VERIFIED");
 
@@ -117,7 +117,7 @@ public class ApproveDeclarationUseCase {
             TaxDeclarationEntity declaration = declarations.get(0);
             declaration.setStatus("APPROVED");
             
-            // Tính toán số tiền thuế dựa trên diện tích đất và bảng giá đã được Địa chính cập nhật.
+            // Tinh toan so tien thue dua tren dien tich dat va bang gia vua duoc cap nhat.
             LandParcelEntity parcel = landParcelJpaRepository.findById(record.getLandParcelId()).orElse(null);
             if (parcel != null && parcel.getLandTypeId() != null && parcel.getAreaId() != null) {
                 Optional<LandPriceEntity> priceOpt = landPriceJpaRepository.findLatestPrice(parcel.getLandTypeId(), parcel.getAreaId());
@@ -127,38 +127,38 @@ public class ApproveDeclarationUseCase {
             }
 
             if (declaration.getActualArea() != null && declaration.getUnitPrice() != null) {
+                // Cong thuc chuan: Area * Price * Rate (Gia dinh rate co dinh 0.0003 cho dat o)
                 taxAmount = declaration.getActualArea()
                         .multiply(declaration.getUnitPrice())
-                        .multiply(new BigDecimal("0.0003"))
-                        .multiply(new BigDecimal("0.5"));
+                        .multiply(new BigDecimal("0.0003"));
                 declaration.setCalculatedTaxAmount(taxAmount);
             }
             
             taxDeclarationRepository.save(declaration);
             
-            // Sinh Hóa đơn (Bill)
+            // Sinh Hoa don (Bill)
             TaxBillEntity bill = TaxBillEntity.builder()
                 .cccdNumber(declaration.getSenderCccd())
                 .amount(taxAmount)
                 .status("UNPAID")
-                .description("Hóa đơn thanh toán thuế đất cho hồ sơ " + recordId)
+                .description("Hoa don thanh toan thue dat cho ho so " + recordId)
                 .declarationId(declaration.getId())
                 .basePrice(declaration.getUnitPrice())
                 .build();
             taxBillRepository.save(bill);
         }
 
-        log.info("Record {} status updated: {} → APPROVED", recordId, oldStatus);
+        log.info("Record {} status updated: {} -> APPROVED", recordId, oldStatus);
 
-        // ===== BƯỚC 4: Cập nhật tax_payments → AWAITING_PAYMENT =====
+        // ===== BUOC 4: Cap nhat tax_payments -> AWAITING_PAYMENT =====
         List<TaxPaymentEntity> payments = taxPaymentJpaRepository.findByRecordId(recordId);
         for (TaxPaymentEntity payment : payments) {
             payment.setPaymentStatus("AWAITING_PAYMENT");
-            payment.setTotalAmountDue(taxAmount); // Đồng bộ số tiền
+            payment.setTotalAmountDue(taxAmount); // dong bo so tien
             taxPaymentJpaRepository.save(payment);
         }
 
-        // ===== BƯỚC 5: Ghi nhật ký processing_logs =====
+        // ===== BUOC 5: Ghi nhat ky processing_logs =====
         ProcessingLogEntity processingLog = ProcessingLogEntity.builder()
                 .recordId(recordId)
                 .processorAccountId(officerAccount.getAccountId())
@@ -173,11 +173,11 @@ public class ApproveDeclarationUseCase {
         log.info("Processing log created for record {}: APPROVE by account {}",
                 recordId, officerAccount.getAccountId());
 
-        // ===== BƯỚC 6: Gửi thông báo cho người dân =====
+        // ===== BUOC 6: Gui thong bao cho nguoi dan =====
         notificationService.notifyDeclarationApproved(record.getCitizenId(), recordId);
 
-        // ===== BƯỚC 7: Ghi Audit Log =====
-        auditLogService.log("APPROVE_DECLARATION", "TAX_DECLARATION", String.valueOf(recordId), "Cán bộ thuế " + cccdNumber + " đã phê duyệt hồ sơ " + recordId + " và khởi tạo hóa đơn");
+        // ===== BUOC 7: Ghi Audit Log =====
+        auditLogService.log("APPROVE_DECLARATION", "TAX_DECLARATION", String.valueOf(recordId), "Officer " + cccdNumber + " approved record " + recordId + " and created bill");
 
         return Map.of(
                 "recordId", recordId,
@@ -185,16 +185,16 @@ public class ApproveDeclarationUseCase {
                 "newStatus", "APPROVED",
                 "paymentStatus", "AWAITING_PAYMENT",
                 "approvedBy", cccdNumber,
-                "message", "Tờ khai mã #" + recordId + " đã được duyệt thành công"
+                "message", "Declaration #" + recordId + " has been approved successfully"
         );
     }
 
     /**
-     * Kiểm tra người dùng hiện tại có quyền duyệt hay không.
+     * Kiem tra nguoi dung hien tai co quyen duyet hay khong.
      */
     private void validateOfficerRole(Authentication auth) {
         if (auth == null || auth.getAuthorities() == null) {
-            throw new RuntimeException("Không có thông tin xác thực");
+            throw new RuntimeException("Authentication information missing");
         }
 
         boolean hasPermission = auth.getAuthorities().stream()
@@ -204,7 +204,7 @@ public class ApproveDeclarationUseCase {
         if (!hasPermission) {
             log.warn("Unauthorized approve attempt by: {}", auth.getName());
             throw new RuntimeException(
-                    "Bạn không có quyền duyệt tờ khai. Yêu cầu vai trò: TAX_OFFICER hoặc ADMIN");
+                    "You do not have permission to approve declarations. Required roles: TAX_OFFICER or ADMIN");
         }
     }
 }

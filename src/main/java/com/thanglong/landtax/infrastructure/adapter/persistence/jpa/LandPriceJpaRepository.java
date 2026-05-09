@@ -11,18 +11,18 @@ import java.util.Optional;
 @Repository
 public interface LandPriceJpaRepository extends JpaRepository<LandPriceEntity, Integer> {
 
-    /** Tìm đơn giá đất mới nhất theo loại đất và khu vực. */
+    /** Tim don gia dat moi nhat theo loai dat va khu vuc. */
     @Query("SELECT lp FROM LandPriceEntity lp " +
            "WHERE lp.landTypeId = :landTypeId AND lp.areaId = :areaId " +
            "ORDER BY lp.appliedFrom DESC LIMIT 1")
     Optional<LandPriceEntity> findLatestPrice(Integer landTypeId, Integer areaId);
 
-    /** Lọc theo loại đất */
+    /** Loc theo loai dat */
     List<LandPriceEntity> findByLandTypeId(Integer landTypeId);
 
-    /** Lọc theo khu vực */
+    /** Loc theo khu vuc */
     List<LandPriceEntity> findByAreaId(Integer areaId);
 
-    /** Lọc theo cả loại đất và khu vực */
+    /** Loc theo ca loai dat va khu vuc */
     List<LandPriceEntity> findByLandTypeIdAndAreaId(Integer landTypeId, Integer areaId);
 }

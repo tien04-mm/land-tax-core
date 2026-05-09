@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * JPA Entity mapping với bảng land_types trong land_tax_management.sql.
+ * JPA Entity mapping voi bang land_types trong land_tax_management.sql.
  */
 @Entity
 @Table(name = "land_types")

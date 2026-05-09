@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * JPA Entity cho bảng tax_records trong land_tax_management.
+ * JPA Entity cho bang tax_records trong land_tax_management.
  */
 @Entity
 @Table(name = "tax_records")

@@ -5,7 +5,7 @@ import lombok.*;
 import java.util.List;
 
 /**
- * DTO phản hồi xác thực chuẩn hóa.
+ * DTO phan hoi xac thuc chuan hoa.
  */
 @Getter
 @Setter

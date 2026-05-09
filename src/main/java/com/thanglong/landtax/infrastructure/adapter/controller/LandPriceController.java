@@ -22,27 +22,28 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Land Price Controller – CRUD bảng giá đất.
+ * Land Price Controller a CRUD bang gia dat.
  *
  * <p>
- * Dành cho Cán bộ địa chính (ROLE_LAND_OFFICER / ROLE_ADMIN) quản lý đơn giá
- * đất.
+ * D nh cho Can bo dia chAnh (ROLE_LAND_OFFICER / ROLE_ADMIN) quan ly don gia
+ * dat.
  * </p>
  *
  * <ul>
- * <li>GET /api/land-prices – Lấy toàn bộ bảng giá</li>
- * <li>GET /api/land-prices/{id} – Lấy chi tiết 1 bản ghi giá</li>
- * <li>GET /api/land-prices/lookup – Tra cứu giá mới nhất theo loại đất + khu
- * vực</li>
- * <li>POST /api/land-prices – Tạo mới bản ghi giá đất</li>
- * <li>PUT /api/land-prices/{id} – Cập nhật bản ghi giá đất</li>
- * <li>DELETE /api/land-prices/{id} – Xóa bản ghi giá đất</li>
+ * <li>GET /api/land-prices a Lay to n bo bang gia</li>
+ * <li>GET /api/land-prices/{id} a Lay chi tiat 1 ban ghi gia</li>
+ * <li>GET /api/land-prices/lookup a Tra cou gia moi nhat theo loai dat + khu
+ * voc</li>
+ * <li>POST /api/land-prices a Tao moi ban ghi gia dat</li>
+ * <li>PUT /api/land-prices/{id} a Cap nhat ban ghi gia dat</li>
+ * <li>DELETE /api/land-prices/{id} a Xoa ban ghi gia dat</li>
  * </ul>
  */
 @RestController
 @RequestMapping("/api/land-prices")
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class LandPriceController {
 
     private final LandPriceJpaRepository landPriceJpaRepository;
@@ -50,37 +51,37 @@ public class LandPriceController {
     private final AreaJpaRepository areaJpaRepository;
     private final AuditLogService auditLogService;
 
-    // ──────────────────────────────────────────────────────────────────
-    // DTO nội bộ
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    // DTO noi bo
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
     @Data
     static class LandPriceRequest {
-        @NotNull(message = "landTypeId không được để trống")
+        @NotNull(message = "landTypeId khAng duoc de trong")
         private Integer landTypeId;
 
-        @NotNull(message = "areaId không được để trống")
+        @NotNull(message = "areaId khAng duoc de trong")
         private Integer areaId;
 
-        @NotNull(message = "unitPrice không được để trống")
-        @Positive(message = "unitPrice phải là số dương")
+        @NotNull(message = "unitPrice khAng duoc de trong")
+        @Positive(message = "unitPrice phai l  so duong")
         private BigDecimal unitPrice;
 
-        @NotNull(message = "appliedFrom không được để trống")
+        @NotNull(message = "appliedFrom khAng duoc de trong")
         private LocalDate appliedFrom;
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // GET /api/land-prices
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-    /** Lấy toàn bộ bảng giá đất. Có thể lọc theo landTypeId hoặc areaId. */
+    /** Lay to n bo bang gia dat. Co the loc theo landTypeId hoac areaId. */
     @GetMapping
     public ResponseEntity<?> getAllPrices(
             @RequestParam(required = false) Integer landTypeId,
             @RequestParam(required = false) Integer areaId) {
 
-        log.info("GET /api/land-prices — landTypeId={}, areaId={}", landTypeId, areaId);
+        log.info("GET /api/land-prices - landTypeId={}, areaId={}", landTypeId, areaId);
 
         List<LandPriceEntity> prices;
         if (landTypeId != null && areaId != null) {
@@ -96,11 +97,11 @@ public class LandPriceController {
         return ResponseEntity.ok(Map.of("data", prices, "total", prices.size()));
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // GET /api/land-prices/{id}
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-    /** Lấy chi tiết một bản ghi giá đất theo ID. */
+    /** Lay chi tiat mot ban ghi gia dat theo ID. */
     @GetMapping("/{id}")
     public ResponseEntity<?> getPriceById(@PathVariable Integer id) {
         log.info("GET /api/land-prices/{}", id);
@@ -109,20 +110,20 @@ public class LandPriceController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // GET /api/land-prices/lookup
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
     /**
-     * Tra cứu đơn giá mới nhất theo loại đất và khu vực.
-     * Dùng để tính toán thuế tự động.
+     * Tra cou don gia moi nhat theo loai dat v  khu voc.
+     * DAng de tAnh toan thua to dong.
      */
     @GetMapping("/lookup")
     public ResponseEntity<?> lookupLatestPrice(
             @RequestParam @NotNull Integer landTypeId,
             @RequestParam @NotNull Integer areaId) {
 
-        log.info("GET /api/land-prices/lookup — landTypeId={}, areaId={}", landTypeId, areaId);
+        log.info("GET /api/land-prices/lookup - landTypeId={}, areaId={}", landTypeId, areaId);
 
         return landPriceJpaRepository.findLatestPrice(landTypeId, areaId)
                 .<ResponseEntity<?>>map(p -> ResponseEntity.ok(Map.of(
@@ -131,27 +132,27 @@ public class LandPriceController {
                         "appliedFrom", p.getAppliedFrom())))
                 .orElse(ResponseEntity.ok(Map.of(
                         "data", null,
-                        "message", "Không tìm thấy bảng giá cho loại đất và khu vực này")));
+                        "message", "KhAng tim thay bang gia cho loai dat v  khu voc n y")));
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // POST /api/land-prices
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-    /** Tạo mới một bản ghi giá đất. Chỉ LAND_OFFICER / ADMIN. */
+    /** Tao moi mot ban ghi gia dat. Cho LAND_OFFICER / ADMIN. */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'LAND_OFFICER')")
-    @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Tạo mới bảng giá đất")
+    @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Tao moi bang gia dat")
     public ResponseEntity<?> createPrice(@Valid @RequestBody LandPriceRequest req) {
-        log.info("POST /api/land-prices — landTypeId={}, areaId={}, unitPrice={}",
+        log.info("POST /api/land-prices - landTypeId={}, areaId={}, unitPrice={}",
                 req.getLandTypeId(), req.getAreaId(), req.getUnitPrice());
 
-        // Kiểm tra FK hợp lệ
+        // Kiem tra FK hop le
         if (!landTypeJpaRepository.existsById(req.getLandTypeId())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "landTypeId không tồn tại"));
+            return ResponseEntity.badRequest().body(Map.of("error", "landTypeId khAng ton tai"));
         }
         if (!areaJpaRepository.existsById(req.getAreaId())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "areaId không tồn tại"));
+            return ResponseEntity.badRequest().body(Map.of("error", "areaId khAng ton tai"));
         }
 
         LandPriceEntity entity = LandPriceEntity.builder()
@@ -162,36 +163,37 @@ public class LandPriceController {
                 .build();
 
         LandPriceEntity saved = landPriceJpaRepository.save(entity);
-        log.info("Đã tạo bản ghi giá đất priceId={}", saved.getPriceId());
+        log.info("A tao ban ghi gia dat priceId={}", saved.getPriceId());
 
         return ResponseEntity.ok(Map.of(
                 "data", saved,
-                "message", "Tạo bảng giá đất thành công"));
+                "message", "Tao bang gia dat th nh cAng"));
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // PUT /api/land-prices/update
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-    /** Cập nhật bảng giá đất theo vị trí và mục đích sử dụng. */
+    /** Cap nhat bang gia dat theo vi trA v  moc dAch so dong. */
     @PutMapping("/update")
     @PreAuthorize("hasRole('LAND_OFFICER')")
     public ResponseEntity<?> updatePriceByLocation(@Valid @RequestBody LandPriceRequest req) {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
-        log.info("PUT /api/land-prices/update — landTypeId={}, areaId={}, unitPrice={}, by {}",
+        log.info("PUT /api/land-prices/update - landTypeId={}, areaId={}, unitPrice={}, by {}",
                 req.getLandTypeId(), req.getAreaId(), req.getUnitPrice(), cccd);
 
-        // Kiểm tra FK
+        // Kiem tra FK
         if (!landTypeJpaRepository.existsById(req.getLandTypeId())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "landTypeId không tồn tại"));
+            return ResponseEntity.badRequest().body(Map.of("error", "landTypeId khAng ton tai"));
         }
         var areaOpt = areaJpaRepository.findById(req.getAreaId());
         if (areaOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "areaId không tồn tại"));
+            return ResponseEntity.badRequest().body(Map.of("error", "areaId khAng ton tai"));
         }
-        String areaName = "đường " + areaOpt.get().getStreetName() + " (Vị trí " + areaOpt.get().getPositionLevel() + ")";
+        String streetName = areaOpt.get().getStreetName() != null ? areaOpt.get().getStreetName() : "khong ten";
+        String areaName = "duong " + streetName + " (Vi tri " + areaOpt.get().getPositionLevel() + ")";
 
-        // Tìm existing price
+        // Tim existing price
         List<LandPriceEntity> existingList = landPriceJpaRepository.findByLandTypeIdAndAreaId(req.getLandTypeId(),
                 req.getAreaId());
 
@@ -214,33 +216,33 @@ public class LandPriceController {
         // Ghi AuditLog
         auditLogService.log("UPDATE_LAND_PRICE", "LAND_PRICE",
                 String.valueOf(saved.getPriceId()),
-                "Cán bộ địa chính " + cccd + " đã cập nhật bảng giá đất khu vực " + areaName);
+                "Can bo dia chAnh " + cccd + " dA cap nhat bang gia dat khu voc " + areaName);
 
         return ResponseEntity.ok(Map.of(
                 "data", saved,
-                "message", "Cập nhật bảng giá đất thành công"));
+                "message", "Cap nhat bang gia dat th nh cAng"));
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // PUT /api/land-prices/{id}
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-    /** Cập nhật bản ghi giá đất. Chỉ LAND_OFFICER / ADMIN. */
+    /** Cap nhat ban ghi gia dat. Cho LAND_OFFICER / ADMIN. */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'LAND_OFFICER')")
-    @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Cập nhật bảng giá đất")
+    @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Cap nhat bang gia dat")
     public ResponseEntity<?> updatePrice(@PathVariable Integer id,
             @Valid @RequestBody LandPriceRequest req) {
         log.info("PUT /api/land-prices/{}", id);
 
         return landPriceJpaRepository.findById(id)
                 .<ResponseEntity<?>>map(existing -> {
-                    // Kiểm tra FK nếu có thay đổi
+                    // Kiem tra FK nau co thay doi
                     if (!landTypeJpaRepository.existsById(req.getLandTypeId())) {
-                        return ResponseEntity.badRequest().body(Map.of("error", "landTypeId không tồn tại"));
+                        return ResponseEntity.badRequest().body(Map.of("error", "landTypeId khAng ton tai"));
                     }
                     if (!areaJpaRepository.existsById(req.getAreaId())) {
-                        return ResponseEntity.badRequest().body(Map.of("error", "areaId không tồn tại"));
+                        return ResponseEntity.badRequest().body(Map.of("error", "areaId khAng ton tai"));
                     }
 
                     existing.setLandTypeId(req.getLandTypeId());
@@ -249,22 +251,22 @@ public class LandPriceController {
                     existing.setAppliedFrom(req.getAppliedFrom());
 
                     LandPriceEntity updated = landPriceJpaRepository.save(existing);
-                    log.info("Đã cập nhật bản ghi giá đất priceId={}", id);
+                    log.info("A cap nhat ban ghi gia dat priceId={}", id);
                     return ResponseEntity.ok(Map.of(
                             "data", updated,
-                            "message", "Cập nhật bảng giá đất thành công"));
+                            "message", "Cap nhat bang gia dat th nh cAng"));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     // DELETE /api/land-prices/{id}
-    // ──────────────────────────────────────────────────────────────────
+    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-    /** Xóa bản ghi giá đất. Chỉ ADMIN. */
+    /** Xoa ban ghi gia dat. Cho ADMIN. */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Xóa bảng giá đất")
+    @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Xoa bang gia dat")
     public ResponseEntity<?> deletePrice(@PathVariable Integer id) {
         log.info("DELETE /api/land-prices/{}", id);
 
@@ -273,10 +275,11 @@ public class LandPriceController {
         }
 
         landPriceJpaRepository.deleteById(id);
-        log.info("Đã xóa bản ghi giá đất priceId={}", id);
+        log.info("A xoa ban ghi gia dat priceId={}", id);
 
         return ResponseEntity.ok(Map.of(
                 "deletedId", id,
-                "message", "Xóa bảng giá đất thành công"));
+                "message", "Xoa bang gia dat th nh cAng"));
     }
 }
+

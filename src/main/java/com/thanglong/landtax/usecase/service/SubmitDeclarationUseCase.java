@@ -22,16 +22,21 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Use case xử lý nộp tờ khai thuế đất.
+ * Use case xu ly nop to khai thue dat.
  *
- * <p><b>Luồng xử lý:</b></p>
+ * <p>
+ * <b>Lu ng x  l :</b>
+ * </p>
  * <ol>
- *   <li>Lấy cccd_number từ JWT (SecurityContext) → gọi SyncUserFromVneidUseCase → citizen_id</li>
- *   <li>Tìm thửa đất (land_parcels) theo parcel_id</li>
- *   <li>Phát hiện gian lận: so sánh declared_area vs area_size (ngưỡng 2%)</li>
- *   <li>Tính thuế: Diện tích × Đơn giá đất × Thuế suất</li>
- *   <li>Lưu tờ khai vào bảng records (category=TAX_DECLARATION, status=PENDING/WARNING_FRAUD)</li>
- *   <li>Tạo bản ghi tax_payments với số tiền thuế tính được</li>
+ * <li>Lay cccd_number tu JWT (SecurityContext) -> goi
+ * SyncUserFromVneidUseCase -> citizen_id</li>
+ * <li>Tim thua dat (land_parcels) theo parcel_id</li>
+ * <li>Phat hien gian lan: so sanh declared_area vs area_size (nguong
+ * 2%)</li>
+ * <li>Tinh thue: Dien tich x Don gia dat x Thue suat</li>
+ * <li>Luu to khai vao bang records (category=TAX_DECLARATION,
+ * status=PENDING/WARNING_FRAUD)</li>
+ * <li>Tao ban ghi tax_payments voi so tien thue tinh duoc</li>
  * </ol>
  */
 @Service
@@ -50,39 +55,40 @@ public class SubmitDeclarationUseCase {
     private final AuditLogService auditLogService;
 
     /**
-     * Nộp tờ khai thuế đất.
+     * Nop to khai thue dat.
      *
-     * @param request DTO chứa: parcelId, attachmentIds
-     * @return TaxDeclarationResponse với kết quả xử lý
+     * @param request DTO chua: parcelId, attachmentIds
+     * @return TaxDeclarationResponse voi ket qua xu ly
      */
     @Transactional
     public TaxDeclarationResponse submitDeclaration(TaxDeclarationRequest request) {
 
-        // ===== BƯỚC 1: Lấy citizen_id từ JWT =====
+        // ===== BUOC 1: Lay citizen_id tu JWT =====
         String cccdNumber = SecurityContextHolder.getContext().getAuthentication().getName();
         Integer citizenId = syncUserFromVneidUseCase.syncAndGetCitizenId(cccdNumber);
         int currentYear = LocalDate.now().getYear();
 
-        log.info("Submit declaration - CCCD: {}, citizenId: {}, parcelId: {}", cccdNumber, citizenId, request.getParcelId());
+        log.info("Submit declaration - CCCD: {}, citizenId: {}, parcelId: {}", cccdNumber, citizenId,
+                request.getParcelId());
 
-        // ===== BƯỚC 2: Tìm thửa đất & Validate quyền sở hữu =====
+        // ===== BUOC 2: Tim thua dat & Validate quyen so huu =====
         LandParcelEntity parcel = landParcelJpaRepository.findById(request.getParcelId())
-                .orElseThrow(() -> new RuntimeException("Thửa đất không tồn tại: " + request.getParcelId()));
+                .orElseThrow(() -> new RuntimeException("Land parcel not found: " + request.getParcelId()));
 
         if (parcel.getOwnerCccd() == null || !parcel.getOwnerCccd().equals(cccdNumber)) {
-            log.warn("Cảnh báo bảo mật: CCCD {} cố nộp tờ khai cho thửa đất {} không thuộc sở hữu", cccdNumber, request.getParcelId());
-            throw new RuntimeException("Bạn không có quyền nộp tờ khai cho thửa đất này.");
+            log.warn(
+                    "Security Warning: CCCD {} attempted to submit declaration for parcel {} not owned by them",
+                    cccdNumber, request.getParcelId());
+            throw new RuntimeException("You do not have permission to submit a declaration for this land parcel.");
         }
 
-        // ===== BƯỚC 3: Tính thuế tự động =====
-        TaxCalculationService.TaxCalculationResult taxResult =
-                taxCalculationService.calculateTax(
-                        request.getParcelId(),
-                        citizenId,
-                        currentYear
-                );
+        // ===== BUOC 3: Tinh thue tu dong =====
+        TaxCalculationService.TaxCalculationResult taxResult = taxCalculationService.calculateTax(
+                request.getParcelId(),
+                citizenId,
+                currentYear);
 
-        // ===== BƯỚC 4: Lưu tờ khai vào bảng records =====
+        // ===== BUOC 4: Luu to khai vao bang records =====
         RecordEntity record = RecordEntity.builder()
                 .citizenId(citizenId)
                 .landParcelId(request.getParcelId())
@@ -93,7 +99,7 @@ public class SubmitDeclarationUseCase {
         RecordEntity savedRecord = recordJpaRepository.save(record);
         log.info("Record created: recordId={}, status=SUBMITTED", savedRecord.getRecordId());
 
-        // ===== BƯỚC 5: Tạo bản ghi tax_payments =====
+        // ===== BUOC 5: Tao ban ghi tax_payments =====
         TaxPaymentEntity taxPayment = TaxPaymentEntity.builder()
                 .recordId(savedRecord.getRecordId())
                 .landParcelId(request.getParcelId())
@@ -105,51 +111,83 @@ public class SubmitDeclarationUseCase {
                 .build();
 
         TaxPaymentEntity savedPayment = taxPaymentJpaRepository.save(taxPayment);
-        log.info("Tax payment created: payId={}, amount={} VNĐ", savedPayment.getPayId(), savedPayment.getTotalAmountDue());
+        log.info("Tax payment created: payId={}, amount={} VND", savedPayment.getPayId(),
+                savedPayment.getTotalAmountDue());
 
-        // ===== BƯỚC 6: Xử lý file đính kèm =====
+        // ===== BUOC 6: Xu ly file dinh kem =====
         if (request.getAttachmentIds() != null && !request.getAttachmentIds().isEmpty()) {
-            java.util.List<AttachmentEntity> attachments = attachmentJpaRepository.findAllById(request.getAttachmentIds());
+            java.util.List<AttachmentEntity> attachments = attachmentJpaRepository
+                    .findAllById(request.getAttachmentIds());
             for (AttachmentEntity att : attachments) {
                 att.setRelatedEntityId((long) savedRecord.getRecordId());
                 att.setRelatedEntityType("RECORD");
             }
             attachmentJpaRepository.saveAll(attachments);
-            log.info("Đã liên kết {} tài liệu đính kèm với recordId={}", attachments.size(), savedRecord.getRecordId());
+            log.info("Linked {} supporting documents with recordId={}", attachments.size(),
+                    savedRecord.getRecordId());
         }
 
-        // Lưu bản record TaxDeclaration cho lịch sử (History)
-        com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity declaration = com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity.builder()
-            .citizenId(citizenId)
-            .senderCccd(cccdNumber)
-            .parcelId(request.getParcelId())
-            .taxYear(currentYear)
-            .declaredArea(taxResult.getActualArea()) // Sử dụng luôn diện tích thực tế
-            .actualArea(taxResult.getActualArea())
-            .declaredPurpose(parcel.getUsageType()) // Lấy mục đích từ sổ đỏ
-            .status("SUBMITTED")
-            .calculatedTaxAmount(taxResult.getTaxAmount())
-            .unitPrice(taxResult.getUnitPrice())
-            .taxRate(taxResult.getExemptionRate()) // Lưu tạm mức giảm trừ vào cột này hoặc log.
-            .supportingDocuments(request.getAttachmentIds() != null ? request.getAttachmentIds().toString() : null)
-            .build();
+        // Luu ban record TaxDeclaration cho lich su (History)
+        BigDecimal actualArea = parcel.getAreaSize();
+        BigDecimal declaredArea = request.getDeclaredArea();
+
+        // Phat hien gian lan: chenh lech > 2%
+        String status = "SUBMITTED";
+        String reviewNote = null;
+
+        if (actualArea != null && declaredArea != null) {
+            BigDecimal diff = actualArea.subtract(declaredArea).abs();
+            BigDecimal threshold = actualArea.multiply(new BigDecimal("0.02"));
+            if (diff.compareTo(threshold) > 0) {
+                status = "FRAUD_SUSPECTED";
+                reviewNote = "Warning: Declared area (" + declaredArea
+                        + ") differs by more than 2% from actual area (" + actualArea + ")";
+                log.warn("FRAUD DETECTED for parcel {}: Declared={}, Actual={}", request.getParcelId(), declaredArea,
+                        actualArea);
+            }
+        }
+
+        com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity declaration = com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity
+                .builder()
+                .citizenId(citizenId)
+                .senderCccd(cccdNumber)
+                .parcelId(request.getParcelId())
+                .taxYear(currentYear)
+                .declaredArea(declaredArea)
+                .actualArea(actualArea)
+                .declaredPurpose(parcel.getUsageType())
+                .status(status)
+                .reviewNote(reviewNote)
+                .calculatedTaxAmount(taxResult.getTaxAmount())
+                .unitPrice(taxResult.getUnitPrice())
+                .taxRate(taxResult.getExemptionRate())
+                .supportingDocuments(request.getAttachmentIds() != null ? request.getAttachmentIds().toString() : null)
+                .build();
         taxDeclarationRepository.save(declaration);
 
-        // Ghi log hệ thống
-        auditLogService.log("SUBMIT_DECLARATION", "TAX_DECLARATION", 
-            String.valueOf(savedRecord.getRecordId()), 
-            "Công dân nộp hồ sơ khai thuế cho thửa đất " + request.getParcelId());
+        // Update record status
+        if ("FRAUD_SUSPECTED".equals(status)) {
+            savedRecord.setCurrentStatus("FRAUD_SUSPECTED");
+            recordJpaRepository.save(savedRecord);
+        }
 
-        // ===== BƯỚC 7: Trả về kết quả =====
+        // Ghi log he thong
+        auditLogService.log("SUBMIT_DECLARATION", "TAX_DECLARATION",
+                String.valueOf(savedRecord.getRecordId()),
+                "Citizen submitted tax declaration for parcel " + request.getParcelId()
+                        + (reviewNote != null ? " - " + reviewNote : ""));
+
+        // ===== BUOC 7: Tra ve ket qua =====
         return TaxDeclarationResponse.builder()
                 .recordId(savedRecord.getRecordId())
                 .citizenId(citizenId)
                 .parcelId(request.getParcelId())
                 .taxYear(currentYear)
-                .declaredArea(taxResult.getActualArea())
-                .actualArea(taxResult.getActualArea())
+                .declaredArea(declaredArea)
+                .actualArea(actualArea)
                 .declaredPurpose(parcel.getUsageType())
-                .status("SUBMITTED")
+                .status(status)
+                .reviewNote(reviewNote)
                 .calculatedTaxAmount(taxResult.getTaxAmount())
                 .unitPrice(taxResult.getUnitPrice())
                 .taxRate(taxResult.getExemptionRate())

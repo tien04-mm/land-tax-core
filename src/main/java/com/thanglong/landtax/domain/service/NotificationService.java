@@ -11,9 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * Service tạo thông báo cho người dân.
+ * Service tao thAng bao cho nguoi dan.
  *
- * <p>Tìm account_id từ citizen_id (bảng accounts) rồi INSERT vào bảng notifications.</p>
+ * <p>Tim account_id tu citizen_id (bang accounts) roi INSERT v o bang notifications.</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -26,56 +26,56 @@ public class NotificationService {
     private final CitizenLocalJpaRepository citizenLocalJpaRepository;
 
     /**
-     * Gửi thông báo khi tờ khai được DUYỆT.
+     * Goi thAng bao khi to khai duoc DUYoT.
      */
     public void notifyDeclarationApproved(Integer citizenId, Integer recordId) {
-        String title = "Tờ khai thuế đã được duyệt";
+        String title = "To khai thua dA duoc duyet";
         String content = String.format(
-                "Tờ khai mã #%d đã được duyệt. Vui lòng thanh toán số tiền thuế trước hạn.",
+                "To khai mA #%d dA duoc duyet. Vui long thanh toan so tion thua truoc han.",
                 recordId);
 
         createNotification(citizenId, null, title, content, "TAX_APPROVED");
     }
 
     /**
-     * Gửi thông báo khi tờ khai bị TỪ CHỐI.
+     * Goi thAng bao khi to khai bi To CHoI.
      */
     public void notifyDeclarationRejected(Integer citizenId, Integer recordId, String reason) {
-        String title = "Tờ khai thuế bị từ chối";
+        String title = "To khai thua bi tu choi";
         String content = String.format(
-                "Tờ khai mã #%d bị từ chối do: %s. Vui lòng kiểm tra và nộp lại.",
+                "To khai mA #%d bi tu choi do: %s. Vui long kiem tra v  nop lai.",
                 recordId, reason);
 
         createNotification(citizenId, null, title, content, "TAX_REJECTED");
     }
 
     /**
-     * Gửi thông báo khi thanh toán THÀNH CÔNG.
+     * Goi thAng bao khi thanh toan THANH CANG.
      */
     public void notifyPaymentSuccess(Integer citizenId, Integer payId,
                                       java.math.BigDecimal amount, Integer taxYear) {
-        String title = "Thanh toán thuế đất thành công";
+        String title = "Thanh toan thua dat th nh cAng";
         String content = String.format(
-                "Cảm ơn bạn đã nộp thuế đất năm %d. Mã thanh toán #%d, " +
-                        "số tiền: %,.0f VNĐ. Hệ thống đã ghi nhận thành công.",
+                "Cam on ban dA nop thua dat nm %d. MA thanh toan #%d, " +
+                        "so tion: %,.0f VN. He thong dA ghi nhan th nh cAng.",
                 taxYear, payId, amount);
 
         createNotification(citizenId, null, title, content, "PAYMENT_SUCCESS");
     }
 
     /**
-     * Tạo thông báo chung cho một citizen.
+     * Tao thAng bao chung cho mot citizen.
      */
     public void createNotification(Integer citizenId, String cccdNumber, String title, String content, String notiType) {
-        // Tìm account_id từ citizen_id
+        // Tim account_id tu citizen_id
         AccountEntity account = accountJpaRepository.findByCitizenId(citizenId)
                 .orElseThrow(() -> {
                     log.error("Cannot send notification: no account found for citizenId={}", citizenId);
                     return new RuntimeException(
-                            "Không tìm thấy tài khoản cho citizenId: " + citizenId);
+                            "KhAng tim thay t i khoan cho citizenId: " + citizenId);
                 });
 
-        // Nếu cccdNumber truyền vào là null, thử tìm từ CitizenLocalEntity
+        // Nau cccdNumber truyon v o l  null, tho tim tu CitizenLocalEntity
         String finalCccd = cccdNumber;
         if (finalCccd == null) {
             finalCccd = citizenLocalJpaRepository.findById(citizenId)
@@ -98,3 +98,4 @@ public class NotificationService {
                 saved.getNotiId(), account.getAccountId(), finalCccd, notiType, title);
     }
 }
+

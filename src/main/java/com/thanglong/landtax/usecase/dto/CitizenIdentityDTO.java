@@ -5,8 +5,8 @@ import lombok.*;
 import java.time.LocalDate;
 
 /**
- * DTO nhận thông tin định danh công dân từ VNeID Auth Service.
- * Mapping với response của: GET /api/vneid/internal/citizens/{cccd}
+ * DTO nhan thong tin dinh danh cong dan tu VNeID Auth Service.
+ * Mapping voi response cua: GET /api/vneid/internal/citizens/{cccd}
  */
 @Getter
 @Setter

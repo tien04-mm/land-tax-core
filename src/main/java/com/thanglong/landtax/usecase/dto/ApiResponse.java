@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Standard API Response format (Đồng bộ với vneid-auth-service).
+ * Standard API Response format (Dong bo voi vneid-auth-service).
  *
  * @param <T> data type
  */

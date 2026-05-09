@@ -65,7 +65,7 @@ public class TaxDeclarationEntity {
     private LocalDateTime submittedAt;
 
     @Column(name = "supporting_documents", columnDefinition = "TEXT")
-    private String supportingDocuments; // Comma-separated URLs/links (sổ đỏ photo, giấy tờ chuyển nhượng)
+    private String supportingDocuments; // Comma-separated URLs/links (so do photo, giay to chuyen nhuong)
 
     @PrePersist
     protected void onCreate() {

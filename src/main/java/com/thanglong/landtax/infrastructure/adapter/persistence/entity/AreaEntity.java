@@ -6,7 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 
 /**
- * JPA Entity mapping với bảng areas trong land_tax_management.sql.
+ * JPA Entity mapping voi bang areas trong land_tax_management.sql.
  */
 @Entity
 @Table(name = "areas")

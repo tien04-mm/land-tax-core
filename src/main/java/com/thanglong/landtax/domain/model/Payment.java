@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Domain model đại diện cho giao dịch thanh toán.
+ * Domain model dai dien cho giao dich thanh toan.
  */
 @Getter
 @Setter
@@ -20,7 +20,7 @@ public class Payment {
     private Long citizenId;
     private BigDecimal amount;
     private String paymentMethod;        // PAYOS, BANK_TRANSFER, CASH
-    private String transactionId;        // Mã giao dịch từ PayOS
+    private String transactionId;        // Ma giao dich tu PayOS
     private String status;              // PENDING, SUCCESS, FAILED, REFUNDED
     private LocalDateTime paymentDate;
     private LocalDateTime createdAt;

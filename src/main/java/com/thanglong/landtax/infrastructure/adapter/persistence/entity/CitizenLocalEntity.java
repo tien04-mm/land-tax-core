@@ -7,9 +7,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * JPA Entity cho bảng citizens local trong land_tax_management.
- * Lưu ý: citizen_id sử dụng kiểu INT tự tăng (khác với VNeID service dùng String CCCD).
- * Trường cccd_number liên kết ngược về VNeID service.
+ * JPA Entity cho bang citizens local trong land_tax_management.
+ * Luu y: citizen_id su dung kieu INT tu tang (khac voi VNeID service dung String CCCD).
+ * Truong cccd_number lien ket nguoc ve VNeID service.
  */
 @Entity
 @Table(name = "citizens")
@@ -26,7 +26,7 @@ public class CitizenLocalEntity {
     private Integer citizenId;
 
     @Column(name = "cccd_number", unique = true, nullable = false, length = 12)
-    private String cccdNumber;          // Số CCCD 12 số — khóa liên kết với VNeID
+    private String cccdNumber;          // So CCCD 12 so  khoa lien ket voi VNeID
 
     @Column(name = "full_name", nullable = false)
     private String fullName;

@@ -17,19 +17,19 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "Authentication", description = "Quản lý đăng nhập và vai trò")
+@Tag(name = "Authentication", description = "Quan ly dang nhap va vai tro")
 public class AuthController {
 
     private final AuthService authService;
 
-    @Operation(summary = "Đăng nhập bằng QR Token từ VNeID")
+    @Operation(summary = "Dang nhap bang QR Token tu VNeID")
     @PostMapping("/qr-login")
     public ResponseEntity<?> qrLogin(@RequestBody AuthRequest.QrLoginRequest request) {
         try {
             AuthResponse response = authService.qrLogin(request.getQrToken());
             return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Đăng nhập thành công",
+                "message", "Dang nhap thanh cong",
                 "data", response
             ));
         } catch (Exception e) {
@@ -40,14 +40,14 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Chuyển đổi vai trò người dùng")
+    @Operation(summary = "Chuyen doi vai tro nguoi dung")
     @PostMapping("/switch-role")
     public ResponseEntity<?> switchRole(@RequestBody AuthRequest.SwitchRoleRequest request) {
         try {
             AuthResponse response = authService.switchRole(request.getTargetRole());
             return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Chuyển đổi vai trò thành công",
+                "message", "Chuyen doi vai tro thanh cong",
                 "data", response
             ));
         } catch (Exception e) {

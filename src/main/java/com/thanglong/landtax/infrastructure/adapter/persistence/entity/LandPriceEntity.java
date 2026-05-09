@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * JPA Entity mapping với bảng land_prices trong land_tax_management.sql.
- * Bảng giá đất: lưu đơn giá đất (unit_price) theo loại đất + khu vực.
+ * JPA Entity mapping voi bang land_prices trong land_tax_management.sql.
+ * Bang gia dat: luu don gia dat (unit_price) theo loai dat + khu vuc.
  */
 @Entity
 @Table(name = "land_prices")
@@ -25,14 +25,14 @@ public class LandPriceEntity {
     private Integer priceId;
 
     @Column(name = "land_type_id", nullable = false)
-    private Integer landTypeId;                 // FK → land_types.land_type_id
+    private Integer landTypeId;                 // FK  land_types.land_type_id
 
     @Column(name = "area_id", nullable = false)
-    private Integer areaId;                     // FK → areas.area_id
+    private Integer areaId;                     // FK  areas.area_id
 
     @Column(name = "unit_price", nullable = false, precision = 18, scale = 2)
-    private BigDecimal unitPrice;               // Đơn giá đất (VNĐ/m²)
+    private BigDecimal unitPrice;               // Don gia dat (VND/m)
 
     @Column(name = "applied_from", nullable = false)
-    private LocalDate appliedFrom;              // Ngày áp dụng
+    private LocalDate appliedFrom;              // Ngay ap dung
 }

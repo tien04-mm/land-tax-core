@@ -6,10 +6,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * JPA Entity mapping chính xác với bảng records trong land_tax_management.sql.
- * Bảng records chứa tờ khai/hồ sơ đất đai (bao gồm tờ khai thuế).
+ * JPA Entity mapping chinh xac voi bang records trong land_tax_management.sql.
+ * Bang records chua to khai/ho so dat dai (bao gom to khai thue).
  *
- * <p>record_category dùng để phân loại: TAX_DECLARATION, TRANSFER, CHANGE_PURPOSE, ...</p>
+ * <p>record_category dung de phan loai: TAX_DECLARATION, TRANSFER, CHANGE_PURPOSE, ...</p>
  * <p>current_status: PENDING, APPROVED, REJECTED, WARNING_FRAUD, ...</p>
  */
 @Entity
@@ -27,10 +27,10 @@ public class RecordEntity {
     private Integer recordId;
 
     @Column(name = "citizen_id", nullable = false)
-    private Integer citizenId;                  // FK → citizens.citizen_id
+    private Integer citizenId;                  // FK  citizens.citizen_id
 
     @Column(name = "land_parcel_id", nullable = false)
-    private Integer landParcelId;               // FK → land_parcels.land_parcel_id
+    private Integer landParcelId;               // FK  land_parcels.land_parcel_id
 
     @Column(name = "record_category", nullable = false, length = 50)
     private String recordCategory;              // TAX_DECLARATION, TRANSFER, ...
