@@ -32,7 +32,7 @@ public class PaymentController {
      * @return checkoutUrl, orderCode, amount, qrCode
      */
     @PostMapping("/{payId}/create-link")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('CITIZEN')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('CITIZEN', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> createPaymentLink(@PathVariable Integer payId) {
         Map<String, Object> result = createPaymentLinkUseCase.createPaymentLink(payId);
         return ResponseEntity.ok(result);
@@ -42,7 +42,7 @@ public class PaymentController {
      * Lay danh sach hoa don chua thanh toan.
      */
     @GetMapping("/unpaid")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('CITIZEN')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('CITIZEN', 'ADMIN')")
     public ResponseEntity<?> getUnpaidPayments() {
         // Simple mock for smoke test if needed, or real fetch
         return ResponseEntity.ok(taxPaymentJpaRepository.findByPaymentStatus("UNPAID")); 
@@ -52,7 +52,7 @@ public class PaymentController {
      * Tai xuong bien lai dien tu (PDF) khi da thanh toan thanh cong.
      */
     @GetMapping("/{payId}/receipt")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('CITIZEN')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('CITIZEN', 'ADMIN')")
     public ResponseEntity<byte[]> downloadReceipt(@PathVariable Integer payId) {
         byte[] pdfBytes = pdfReceiptService.generatePaymentReceipt(payId);
 

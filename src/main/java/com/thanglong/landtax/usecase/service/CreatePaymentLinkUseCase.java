@@ -34,6 +34,7 @@ public class CreatePaymentLinkUseCase {
     private final PayOSAdapter payOSAdapter;
     private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordJpaRepository recordJpaRepository;
     private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository citizenLocalJpaRepository;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxBillRepository taxBillRepository;
 
     @Value("${payos.return-url:http://localhost:3000/payment/success}")
     private String returnUrl;
@@ -72,13 +73,21 @@ public class CreatePaymentLinkUseCase {
                 if (payment.getRecordId() == null) {
                     throw new RuntimeException("Payment is not linked to any record, cannot verify permissions.");
                 }
-                com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity record = recordJpaRepository.findById(payment.getRecordId())
-                        .orElseThrow(() -> new RuntimeException("Linked record not found."));
-                com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity citizen = citizenLocalJpaRepository.findById(record.getCitizenId())
-                        .orElseThrow(() -> new RuntimeException("Citizen info not found."));
-                
-                if (!citizen.getCccdNumber().equals(currentUsername)) {
-                    throw new org.springframework.security.access.AccessDeniedException("You do not have permission to create a payment link for this tax amount.");
+
+                // Check ownership via tax_bills (priority)
+                boolean isBillOwner = taxBillRepository.findByDeclarationId(payment.getRecordId()).stream()
+                        .anyMatch(bill -> currentUsername.equals(bill.getCccdNumber()));
+
+                if (!isBillOwner) {
+                    // Fallback: Check ownership via record -> citizen
+                    com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity record = recordJpaRepository.findById(payment.getRecordId())
+                            .orElseThrow(() -> new RuntimeException("Linked record not found."));
+                    com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity citizen = citizenLocalJpaRepository.findById(record.getCitizenId())
+                            .orElseThrow(() -> new RuntimeException("Citizen info not found."));
+                    
+                    if (!citizen.getCccdNumber().equals(currentUsername)) {
+                        throw new org.springframework.security.access.AccessDeniedException("You do not have permission to create a payment link for this tax amount.");
+                    }
                 }
             }
         }
