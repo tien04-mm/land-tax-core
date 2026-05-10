@@ -3,11 +3,12 @@ package com.thanglong.landtax.infrastructure.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; // DÒNG QUAN TRỌNG NHẤT
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -23,7 +24,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity // Annotation này giờ sẽ hết lỗi đỏ
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -53,10 +54,17 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/public/**", "/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                // Mở đường cho lệnh OPTIONS (Pre-flight) của trình duyệt
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Các API công khai
+                .requestMatchers("/api/public/**", "/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/profile/sync", "/api/land-prices/lookup").permitAll()
+                // Phân quyền theo Role
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/tax/records/**").hasAnyRole("TAX_OFFICER", "ADMIN")
-                .requestMatchers("/api/payments/**").hasAnyRole("CITIZEN", "ADMIN")
+                .requestMatchers("/api/land-parcels/**").hasAnyRole("LAND_OFFICER", "ADMIN", "CITIZEN")
+                .requestMatchers("/api/tax/**").hasAnyRole("TAX_OFFICER", "ADMIN", "CITIZEN")
+                .requestMatchers("/api/mutation-requests/**").hasAnyRole("CITIZEN", "LAND_OFFICER", "ADMIN")
+                .requestMatchers("/api/payments/**", "/api/profile/**").hasAnyRole("CITIZEN", "TAX_OFFICER", "ADMIN")
+                .requestMatchers("/api/land-prices/**").hasAnyRole("LAND_OFFICER", "ADMIN", "TAX_OFFICER", "CITIZEN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -66,9 +74,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
+        // Cho phép Frontend ở port 3000 gọi API
+        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
