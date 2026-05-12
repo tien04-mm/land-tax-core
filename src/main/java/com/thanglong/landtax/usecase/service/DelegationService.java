@@ -8,12 +8,15 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRe
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RoleDelegationJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RoleJpaRepository;
+import com.thanglong.landtax.usecase.dto.DelegationDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -78,5 +81,19 @@ public class DelegationService {
                                                 endDateStr));
 
                 return saved;
+        }
+
+        public List<DelegationDTO> getAllDelegations() {
+                return delegationRepository.findAll().stream()
+                                .map(entity -> DelegationDTO.builder()
+                                                .id(entity.getDelegationId())
+                                                .delegatorAccountId(entity.getDelegatorAccountId())
+                                                .delegateeAccountId(entity.getDelegateeAccountId())
+                                                .delegatedRoleId(entity.getDelegatedRoleId())
+                                                .startTime(entity.getStartTime())
+                                                .endTime(entity.getEndTime())
+                                                .status(entity.getStatus())
+                                                .build())
+                                .collect(Collectors.toList());
         }
 }

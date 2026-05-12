@@ -16,6 +16,13 @@ public class DelegationController {
 
     private final DelegationService delegationService;
 
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAllDelegations() {
+        return ResponseEntity.ok(delegationService.getAllDelegations());
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delegateRole(@RequestBody Map<String, Object> request) {

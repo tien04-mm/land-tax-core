@@ -1,6 +1,7 @@
 package com.thanglong.landtax.infrastructure.adapter.controller;
 
 import com.thanglong.landtax.usecase.service.StatisticsService;
+import com.thanglong.landtax.usecase.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +32,7 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AuditLogE
 public class AdminController {
 
     private final StatisticsService statisticsService;
+    private final AdminService adminService;
     private final AccountJpaRepository accountJpaRepository;
     private final CitizenLocalJpaRepository citizenLocalJpaRepository;
     private final VneidServiceClient vneidServiceClient;
@@ -54,8 +56,8 @@ public class AdminController {
      * GET /api/admin/users - Danh sach nguoi dung.
      */
     @GetMapping("/users")
-    public ResponseEntity<?> getAllUsers() {
-        return ResponseEntity.ok(citizenLocalJpaRepository.findAll());
+    public ResponseEntity<?> getAllUsers(@RequestParam(required = false) String search) {
+        return ResponseEntity.ok(adminService.getAllUsers(search));
     }
 
     @PutMapping("/users/{cccd}/status")
