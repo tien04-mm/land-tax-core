@@ -1,6 +1,7 @@
 package com.thanglong.landtax.infrastructure.adapter.controller;
 
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandParcelEntity;
+import com.thanglong.landtax.usecase.dto.LandParcelDTO;
 import com.thanglong.landtax.usecase.service.LandParcelImportService;
 import com.thanglong.landtax.usecase.service.LandParcelService;
 import lombok.RequiredArgsConstructor;
@@ -26,17 +27,17 @@ public class LandParcelController {
     private final LandParcelImportService landParcelImportService;
 
     @GetMapping("/my-parcels")
-    @PreAuthorize("hasRole('CITIZEN')")
-    public ResponseEntity<?> getMyLandParcels() {
+    @PreAuthorize("hasAuthority('ROLE_CITIZEN')")
+    public ResponseEntity<List<LandParcelDTO>> getMyLandParcels() {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
         log.info("GET /api/land-parcels/my-assets  owner_cccd={}", cccd);
-        List<LandParcelEntity> myParcels = landParcelService.getMyLandParcels(cccd);
+        List<LandParcelDTO> myParcels = landParcelService.getMyLandParcels(cccd);
         return ResponseEntity.ok(myParcels);
     }
 
     @PostMapping(value = "/import", consumes = "multipart/form-data")
     @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Import Excel thua dat")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LAND_OFFICER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER')")
     public ResponseEntity<?> importLandParcels(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "File khong duoc de trong"));
@@ -77,14 +78,14 @@ public class LandParcelController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LAND_OFFICER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER')")
     public ResponseEntity<?> getAllParcelsForOfficer() {
         List<LandParcelEntity> allParcels = landParcelService.getAllParcels();
         return ResponseEntity.ok(Map.of("data", allParcels, "total", allParcels.size()));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'LAND_OFFICER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER')")
     public ResponseEntity<?> getAllParcels(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -112,7 +113,7 @@ public class LandParcelController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'LAND_OFFICER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER')")
     public ResponseEntity<?> createParcel(@RequestBody LandParcelEntity entity) {
         log.info("Tao moi thua dat: {}", entity.getParcelNumber());
         LandParcelEntity created = landParcelService.createParcel(entity);
@@ -120,7 +121,7 @@ public class LandParcelController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LAND_OFFICER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER')")
     public ResponseEntity<?> updateParcel(@PathVariable Integer id, @RequestBody LandParcelEntity updatedEntity) {
         log.info("Cap nhat thua dat ID: {}", id);
         LandParcelEntity updated = landParcelService.updateParcel(id, updatedEntity);
@@ -128,7 +129,7 @@ public class LandParcelController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Xoa thua dat")
     public ResponseEntity<?> deleteParcel(@PathVariable Integer id) {
         landParcelService.deleteParcel(id);

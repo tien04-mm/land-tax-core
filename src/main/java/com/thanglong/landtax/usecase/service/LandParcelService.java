@@ -2,6 +2,7 @@ package com.thanglong.landtax.usecase.service;
 
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandParcelEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandParcelJpaRepository;
+import com.thanglong.landtax.usecase.dto.LandParcelDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +20,7 @@ public class LandParcelService {
 
     private final LandParcelJpaRepository landParcelJpaRepository;
 
-    public List<LandParcelEntity> getMyLandParcels(String cccd) {
+    public List<LandParcelDTO> getMyLandParcels(String cccd) {
         log.info("Fetching land parcels for CCCD: {}", cccd);
         List<LandParcelEntity> parcels = landParcelJpaRepository.findByOwnerCccd(cccd);
         
@@ -28,7 +30,9 @@ public class LandParcelService {
             log.info("Found {} land parcels for CCCD: {}", parcels.size(), cccd);
         }
         
-        return parcels;
+        return parcels.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     public List<LandParcelEntity> getAllParcels() {
@@ -77,5 +81,30 @@ public class LandParcelService {
     @Transactional
     public void deleteParcel(Integer id) {
         landParcelJpaRepository.deleteById(id);
+    }
+
+    private LandParcelDTO convertToDTO(LandParcelEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return LandParcelDTO.builder()
+                .landParcelId(entity.getLandParcelId())
+                .landTypeId(entity.getLandTypeId())
+                .areaId(entity.getAreaId())
+                .parcelNumber(entity.getParcelNumber())
+                .mapSheetNumber(entity.getMapSheetNumber())
+                .areaSize(entity.getAreaSize())
+                .usageDuration(entity.getUsageDuration())
+                .usageType(entity.getUsageType())
+                .usageOrigin(entity.getUsageOrigin())
+                .address(entity.getAddress())
+                .certificateNumber(entity.getCertificateNumber())
+                .gcnBookNumber(entity.getGcnBookNumber())
+                .attachedHouse(entity.getAttachedHouse())
+                .attachedOther(entity.getAttachedOther())
+                .landInfoPdf(entity.getLandInfoPdf())
+                .notes(entity.getNotes())
+                .ownerCccd(entity.getOwnerCccd())
+                .build();
     }
 }
