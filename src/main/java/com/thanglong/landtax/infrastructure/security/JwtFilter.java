@@ -96,7 +96,9 @@ public class JwtFilter extends OncePerRequestFilter {
                 java.util.List<String> roles = claims.get("roles", java.util.List.class);
 
                 if (StringUtils.hasText(cccdNumber) && StringUtils.hasText(activeRole)) {
+                    log.info("JWT Claims: {}", claims);
                     String authority = activeRole.startsWith("ROLE_") ? activeRole : "ROLE_" + activeRole;
+                    log.info("Assigning authority: {} to user: {}", authority, cccdNumber);
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     cccdNumber,                 // Principal = So CCCD

@@ -40,7 +40,6 @@ import java.util.Map;
  * </ul>
  */
 @RestController
-@RequestMapping("/api/land-prices")
 @RequiredArgsConstructor
 @Slf4j
 @SuppressWarnings("null")
@@ -76,7 +75,7 @@ public class LandPriceController {
     // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
     /** Lay to n bo bang gia dat. Co the loc theo landTypeId hoac areaId. */
-    @GetMapping
+    @GetMapping("/api/land-prices")
     public ResponseEntity<?> getAllPrices(
             @RequestParam(required = false) Integer landTypeId,
             @RequestParam(required = false) Integer areaId) {
@@ -140,7 +139,7 @@ public class LandPriceController {
     // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
     /** Tao moi mot ban ghi gia dat. Cho LAND_OFFICER / ADMIN. */
-    @PostMapping
+    @PostMapping("/api/land-prices")
     @PreAuthorize("hasAnyRole('ADMIN', 'LAND_OFFICER')")
     @com.thanglong.landtax.infrastructure.config.aop.AuditLog(action = "Tao moi bang gia dat")
     public ResponseEntity<?> createPrice(@Valid @RequestBody LandPriceRequest req) {

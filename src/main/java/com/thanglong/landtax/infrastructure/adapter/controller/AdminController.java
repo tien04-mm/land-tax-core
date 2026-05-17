@@ -2,6 +2,10 @@ package com.thanglong.landtax.infrastructure.adapter.controller;
 
 import com.thanglong.landtax.usecase.service.StatisticsService;
 import com.thanglong.landtax.usecase.service.AdminService;
+import com.thanglong.landtax.usecase.dto.CreateUserRequest;
+import com.thanglong.landtax.usecase.dto.UpdateRoleRequest;
+import com.thanglong.landtax.usecase.dto.RoleDTO;
+import com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,14 +25,14 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AuditLogJpaR
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AuditLogEntity;
 
 /**
- * Controller cho cac API thong ke bao cao (Dashboard) danh cho Can bo / Admin.
+ * Controller cho cac API thong ke bao cao (Dashboard) va quan ly nguoi dung/role danh cho Admin.
  */
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 @SuppressWarnings("null")
 @Slf4j
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 public class AdminController {
 
     private final StatisticsService statisticsService;
@@ -58,6 +62,50 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers(@RequestParam(required = false) String search) {
         return ResponseEntity.ok(adminService.getAllUsers(search));
+    }
+
+    /**
+     * POST /api/admin/users - Tạo mới cán bộ/người dùng.
+     */
+    @PostMapping("/users")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<?> createUser(@RequestBody CreateUserRequest request) {
+        log.info("POST /api/admin/users - Admin creating user");
+        try {
+            CitizenLocalEntity user = adminService.createUser(request);
+            auditLogService.log("CREATE_USER", "CITIZEN", request.getCccdNumber(), "Tạo cán bộ mới thành công: " + request.getFullName());
+            return ResponseEntity.ok(user);
+        } catch (IllegalArgumentException e) {
+            log.error("Lỗi khi tạo cán bộ: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * GET /api/admin/roles - Xem danh sách Role.
+     */
+    @GetMapping("/roles")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<List<RoleDTO>> getAllRoles() {
+        log.info("GET /api/admin/roles - Admin fetching all roles");
+        return ResponseEntity.ok(adminService.getAllRoles());
+    }
+
+    /**
+     * PUT /api/admin/roles/{id} - Cập nhật Role.
+     */
+    @PutMapping("/roles/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<?> updateRole(@PathVariable Integer id, @RequestBody UpdateRoleRequest request) {
+        log.info("PUT /api/admin/roles/{} - Admin updating role", id);
+        try {
+            RoleDTO role = adminService.updateRole(id, request);
+            auditLogService.log("UPDATE_ROLE", "ROLE", String.valueOf(id), "Cập nhật thông tin role thành công: " + request.getRoleName());
+            return ResponseEntity.ok(role);
+        } catch (RuntimeException e) {
+            log.error("Lỗi khi cập nhật role: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/users/{cccd}/status")

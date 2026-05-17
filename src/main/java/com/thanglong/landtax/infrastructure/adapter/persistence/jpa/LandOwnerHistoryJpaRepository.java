@@ -4,6 +4,9 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandOwner
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface LandOwnerHistoryJpaRepository extends JpaRepository<LandOwnerHistoryEntity, Long> {
+    List<LandOwnerHistoryEntity> findByParcelIdOrderByEffectiveDateDesc(Integer parcelId);
 }

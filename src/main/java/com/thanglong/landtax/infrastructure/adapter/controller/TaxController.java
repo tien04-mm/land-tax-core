@@ -38,8 +38,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/tax")
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 @Slf4j
+@SuppressWarnings("null")
 public class TaxController {
 
     private final SubmitDeclarationUseCase submitDeclarationUseCase;
@@ -59,7 +59,7 @@ public class TaxController {
     @Operation(summary = "Nop to khai thua dat", description = "Nguoi dan nop to khai thua dat moi")
     @ApiResponse(responseCode = "200", description = "Nop to khai th nh cAng")
     @PostMapping("/declarations")
-    @PreAuthorize("hasRole('CITIZEN')")
+    @PreAuthorize("hasAnyRole('CITIZEN', 'ADMIN')")
     public ResponseEntity<TaxDeclarationResponse> submitDeclaration(
             @Valid @RequestBody TaxDeclarationRequest request) {
         log.info("User: {}, Authorities: {}", SecurityContextHolder.getContext().getAuthentication().getName(),
@@ -92,7 +92,7 @@ public class TaxController {
     @Operation(summary = "Duyet to khai thua dat", description = "Can bo thua duyet ho so VERIFIED")
     @ApiResponse(responseCode = "200", description = "Duyet ho so th nh cAng")
     @PutMapping("/records/{id}/approve")
-    @PreAuthorize("hasRole('TAX_OFFICER')")
+    @PreAuthorize("hasAnyRole('TAX_OFFICER', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> approveRecord(
             @PathVariable Integer id,
             @RequestBody(required = false) ReviewDeclarationRequest request) {
@@ -109,7 +109,7 @@ public class TaxController {
      */
     @Operation(summary = "Tu choi to khai thua dat", description = "Can bo thua tu choi ho so")
     @ApiResponse(responseCode = "200", description = "Tu choi ho so th nh cAng")
-    @PutMapping("/records/{id}/reject")
+    @PutMapping("/records/{id}/verify")
     @PreAuthorize("hasRole('TAX_OFFICER')")
     public ResponseEntity<Map<String, Object>> rejectRecord(
             @PathVariable Integer id,
@@ -182,7 +182,7 @@ public class TaxController {
      */
     @Operation(summary = "Xem hoa don dA thanh toan", description = "Nguoi dan xem lich so hoa don thua dA nop")
     @ApiResponse(responseCode = "200", description = "Lay danh sach hoa don th nh cAng")
-    @GetMapping("/bills/paid")
+    @GetMapping("/records/pending")
     public ResponseEntity<List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity>> getPaidBills() {
         String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
                 .getName();
@@ -230,7 +230,7 @@ public class TaxController {
      * Xem to n bo hoa don thua.
      */
     @Operation(summary = "Danh sach hoa don", description = "Can bo thua xem danh sach tat ca hoa don")
-    @GetMapping("/bills/all")
+    @GetMapping("/history")
     @PreAuthorize("hasRole('TAX_OFFICER')")
     public ResponseEntity<List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity>> getAllBills() {
         return ResponseEntity.ok(taxBillRepository.findAll());

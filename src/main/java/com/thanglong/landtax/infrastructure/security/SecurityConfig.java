@@ -57,14 +57,17 @@ public class SecurityConfig {
                 // Mở đường cho lệnh OPTIONS (Pre-flight) của trình duyệt
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Các API công khai
-                .requestMatchers("/api/public/**", "/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/profile/sync", "/api/land-prices/lookup").permitAll()
+                .requestMatchers("/api/public/**", "/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/profile/sync", "/api/land-prices/lookup", "/api/lands/**", "/error").permitAll()
                 // Phân quyền theo Role
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/land-parcels/**").hasAnyRole("LAND_OFFICER", "ADMIN", "CITIZEN")
-                .requestMatchers("/api/tax/**").hasAnyRole("TAX_OFFICER", "ADMIN", "CITIZEN")
-                .requestMatchers("/api/mutation-requests/**").hasAnyRole("CITIZEN", "LAND_OFFICER", "ADMIN")
-                .requestMatchers("/api/payments/**", "/api/profile/**").hasAnyRole("CITIZEN", "TAX_OFFICER", "ADMIN")
-                .requestMatchers("/api/land-prices/**").hasAnyRole("LAND_OFFICER", "ADMIN", "TAX_OFFICER", "CITIZEN")
+                .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+                .requestMatchers("/api/reports/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_TAX_OFFICER", "ROLE_LAND_OFFICER")
+                .requestMatchers("/api/records/*/forward").hasAuthority("ROLE_LAND_OFFICER")
+                .requestMatchers("/api/taxes/**").hasAnyAuthority("ROLE_CITIZEN", "ROLE_TAX_OFFICER", "ROLE_ADMIN")
+                .requestMatchers("/api/land-parcels/**").hasAnyAuthority("ROLE_LAND_OFFICER", "ROLE_ADMIN", "ROLE_CITIZEN")
+                .requestMatchers("/api/tax/**").hasAnyAuthority("ROLE_TAX_OFFICER", "ROLE_ADMIN", "ROLE_CITIZEN")
+                .requestMatchers("/api/mutation-requests/**").hasAnyAuthority("ROLE_CITIZEN", "ROLE_LAND_OFFICER", "ROLE_ADMIN")
+                .requestMatchers("/api/payments/**", "/api/profile/**").hasAnyAuthority("ROLE_CITIZEN", "ROLE_TAX_OFFICER", "ROLE_ADMIN")
+                .requestMatchers("/api/land-prices/**").hasAnyAuthority("ROLE_LAND_OFFICER", "ROLE_ADMIN", "ROLE_TAX_OFFICER", "ROLE_CITIZEN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
