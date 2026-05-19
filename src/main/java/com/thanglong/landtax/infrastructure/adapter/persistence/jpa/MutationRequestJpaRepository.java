@@ -11,8 +11,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface MutationRequestJpaRepository extends JpaRepository<MutationRequestEntity, Long> {
 
-    Page<MutationRequestEntity> findAll(Pageable pageable);
-
     Page<MutationRequestEntity> findByStatus(String status, Pageable pageable);
 
     @Query("SELECT m FROM MutationRequestEntity m, CitizenLocalEntity c WHERE m.submittedBy = CAST(c.citizenId as long) AND c.cccdNumber = :requesterCccd")

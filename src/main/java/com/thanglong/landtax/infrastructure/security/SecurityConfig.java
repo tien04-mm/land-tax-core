@@ -61,7 +61,7 @@ public class SecurityConfig {
                 // Phân quyền theo Role
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers("/api/reports/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_TAX_OFFICER", "ROLE_LAND_OFFICER")
-                .requestMatchers("/api/records/*/forward").hasAuthority("ROLE_LAND_OFFICER")
+                .requestMatchers("/api/records/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_LAND_OFFICER", "ROLE_TAX_OFFICER")
                 .requestMatchers("/api/taxes/**").hasAnyAuthority("ROLE_CITIZEN", "ROLE_TAX_OFFICER", "ROLE_ADMIN")
                 .requestMatchers("/api/land-parcels/**").hasAnyAuthority("ROLE_LAND_OFFICER", "ROLE_ADMIN", "ROLE_CITIZEN")
                 .requestMatchers("/api/tax/**").hasAnyAuthority("ROLE_TAX_OFFICER", "ROLE_ADMIN", "ROLE_CITIZEN")

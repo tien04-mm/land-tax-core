@@ -17,6 +17,7 @@ import java.util.List;
 @RequestMapping("/api/records")
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class RecordController {
 
     private final RecordJpaRepository recordJpaRepository;
@@ -24,12 +25,35 @@ public class RecordController {
     private final RecordService recordService;
 
     /**
+     * Lay danh sach tat ca ho so.
+     */
+    @GetMapping
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER', 'ROLE_TAX_OFFICER')")
+    public ResponseEntity<List<RecordEntity>> getAllRecords() {
+        log.info("GET /api/records - Lay danh sach tat ca ho so");
+        List<RecordEntity> records = recordJpaRepository.findAll();
+        return ResponseEntity.ok(records);
+    }
+
+    /**
+     * Xem chi tiet ho so.
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER', 'ROLE_TAX_OFFICER')")
+    public ResponseEntity<RecordEntity> getRecordById(@PathVariable Integer id) {
+        log.info("GET /api/records/{} - Xem chi tiet ho so", id);
+        return recordJpaRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
      * Lay danh sach ho so dang cho xac minh (trang thai SUBMITTED).
      */
     @GetMapping("/submitted")
-    @PreAuthorize("hasAuthority('ROLE_LAND_OFFICER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER', 'ROLE_TAX_OFFICER')")
     public ResponseEntity<List<RecordEntity>> getSubmittedRecords() {
-        log.info("GET /api/records/submitted - LAND_OFFICER lay danh sach ho so cho xac minh");
+        log.info("GET /api/records/submitted - lay danh sach ho so cho xac minh");
         List<RecordEntity> records = recordJpaRepository.findByCurrentStatus("SUBMITTED");
         return ResponseEntity.ok(records);
     }
@@ -38,7 +62,7 @@ public class RecordController {
      * Tiep nhan va xac minh ho so.
      */
     @PutMapping("/{id}/verify")
-    @PreAuthorize("hasAuthority('ROLE_LAND_OFFICER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER', 'ROLE_TAX_OFFICER')")
     public ResponseEntity<?> verifyRecord(@PathVariable Integer id) {
         log.info("PUT /api/records/{}/verify", id);
         try {
@@ -53,9 +77,9 @@ public class RecordController {
      * Luân chuyển hồ sơ sang cơ quan Thuế.
      */
     @PostMapping("/{id}/forward")
-    @PreAuthorize("hasAuthority('ROLE_LAND_OFFICER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER', 'ROLE_TAX_OFFICER')")
     public ResponseEntity<?> forwardRecord(@PathVariable Integer id, @RequestBody ForwardRecordRequest request) {
-        log.info("POST /api/records/{}/forward - LAND_OFFICER luan chuyen ho so", id);
+        log.info("POST /api/records/{}/forward - luan chuyen ho so", id);
         try {
             recordService.forwardRecord(id, request);
             return ResponseEntity.ok(java.util.Map.of("message", "Luân chuyển hồ sơ sang cơ quan Thuế thành công"));

@@ -68,11 +68,6 @@ public class ApproveDeclarationUseCase {
     private final LandParcelJpaRepository landParcelJpaRepository;
     private final LandPriceJpaRepository landPriceJpaRepository;
 
-    /** Cac role duoc phep duyet to khai */
-    private static final Set<String> ALLOWED_ROLES = Set.of(
-            "TAX_OFFICER", "ADMIN",
-            "ROLE_TAX_OFFICER", "ROLE_ADMIN");
-
     /**
      * Duyet to khai thue.
      *
@@ -85,7 +80,6 @@ public class ApproveDeclarationUseCase {
 
         // ===== BUOC 1: Kiem tra quyen =====
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        // validateOfficerRole(auth);
 
         String cccdNumber = auth.getName();
         Integer officerCitizenId = syncUserFromVneidUseCase.syncAndGetCitizenId(cccdNumber);
@@ -193,22 +187,4 @@ public class ApproveDeclarationUseCase {
                 "message", "Declaration #" + recordId + " has been approved successfully");
     }
 
-    /**
-     * Kiem tra nguoi dung hien tai co quyen duyet hay khong.
-     */
-    private void validateOfficerRole(Authentication auth) {
-        if (auth == null || auth.getAuthorities() == null) {
-            throw new RuntimeException("Authentication information missing");
-        }
-
-        boolean hasPermission = auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(ALLOWED_ROLES::contains);
-
-        if (!hasPermission) {
-            log.warn("Unauthorized approve attempt by: {}", auth.getName());
-            throw new RuntimeException(
-                    "You do not have permission to approve declarations. Required roles: TAX_OFFICER or ADMIN");
-        }
-    }
 }
