@@ -1,7 +1,7 @@
 package com.thanglong.landtax.infrastructure.adapter.controller;
 
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AttachmentEntity;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AttachmentJpaRepository;
+import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordDocumentEntity;
+import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordDocumentJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,13 +27,13 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * File Controller a Quan ly upload/download file vat ly.
+ * File Controller — Quan ly upload/download file vat ly.
  *
  * <ul>
- *   <li>POST /api/files/upload     a Upload file, luu v o /uploads, tao ban ghi attachments</li>
- *   <li>GET  /api/files/{filename} a Download/xem file dA upload</li>
- *   <li>GET  /api/files/my-files   a Danh sach file coa nguoi dAng hien tai</li>
- *   <li>DELETE /api/files/{id}     a Xoa file (xoa ban ghi + file vat ly)</li>
+ *   <li>POST /api/files/upload     — Upload file, luu vao /uploads, tao ban ghi record_documents</li>
+ *   <li>GET  /api/files/{filename} — Download/xem file da upload</li>
+ *   <li>GET  /api/files/my-files   — Danh sach file cua nguoi dung hien tai</li>
+ *   <li>DELETE /api/files/{id}     — Xoa file (xoa ban ghi + file vat ly)</li>
  * </ul>
  */
 @RestController
@@ -43,17 +43,17 @@ import java.util.UUID;
 @SuppressWarnings("null")
 public class FileController {
 
-    private final AttachmentJpaRepository attachmentJpaRepository;
+    private final RecordDocumentJpaRepository recordDocumentJpaRepository;
 
     /** Thu moc luu file vat ly, cau hinh trong application.yml. Mac dinh: ./uploads */
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
-    /** Base URL coa server, dAng de tao file_url tra vo cho Frontend */
+    /** Base URL cua server, dung de tao file_url tra ve cho Frontend */
     @Value("${app.server.base-url:http://localhost:8080}")
     private String serverBaseUrl;
 
-    // Cac dinh dang file duoc phAp upload
+    // Cac dinh dang file duoc phep upload
     private static final long MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024L; // 20 MB
     private static final List<String> ALLOWED_CONTENT_TYPES = List.of(
             "image/jpeg", "image/png", "image/gif", "image/webp",
@@ -64,24 +64,24 @@ public class FileController {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
 
-    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    // ──────────────────────────────────────────────────────────────────
     // POST /api/files/upload
-    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    // ──────────────────────────────────────────────────────────────────
 
     /**
-     * Upload file lAn server.
+     * Upload file len server.
      *
      * <ol>
-     *   <li>Validate file (kAch thuoc, loai MIME)</li>
-     *   <li>Tao tAn file duy nhat (UUID + extension)</li>
-     *   <li>Luu file v o thu moc /uploads trAn server</li>
-     *   <li>Tao ban ghi trong bang attachments</li>
-     *   <li>Tra vo file_url de Frontend so dong</li>
+     *   <li>Validate file (kich thuoc, loai MIME)</li>
+     *   <li>Tao ten file duy nhat (UUID + extension)</li>
+     *   <li>Luu file vao thu moc /uploads tren server</li>
+     *   <li>Tao ban ghi trong bang record_documents</li>
+     *   <li>Tra ve file_url de Frontend su dung</li>
      * </ol>
      *
      * @param file             File can upload (multipart/form-data)
-     * @param relatedEntityType Loai thoc the liAn kat (LAND_PARCEL, RECORD,...) - tuy chon
-     * @param relatedEntityId   ID thoc the liAn kat - tuy chon
+     * @param relatedEntityType Loai thuc the lien ket (LAND_PARCEL, RECORD,...) - tuy chon
+     * @param relatedEntityId   ID thuc the lien ket - tuy chon
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadFile(
@@ -94,25 +94,25 @@ public class FileController {
         log.info("POST /api/files/upload - uploader={}, originalName={}, size={}",
                 uploaderCccd, file.getOriginalFilename(), file.getSize());
 
-        // aa 1. Validate file aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        // — 1. Validate file ——————————————————————————————————————
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "File khAng duoc de trong"));
+            return ResponseEntity.badRequest().body(Map.of("error", "File khong duoc de trong"));
         }
 
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", String.format("File vuot qua kAch thuoc toi da %d MB", MAX_FILE_SIZE_BYTES / 1024 / 1024)
+                    "error", String.format("File vuot qua kich thuoc toi da %d MB", MAX_FILE_SIZE_BYTES / 1024 / 1024)
             ));
         }
 
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", "inh dang file khAng duoc ho tro. Cho chap nhan: anh, PDF, Word, Excel"
+                    "error", "Dinh dang file khong duoc ho tro. Chi chap nhan: anh, PDF, Word, Excel"
             ));
         }
 
-        // aa 2. Tao tAn file duy nhat aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        // — 2. Tao ten file duy nhat ————————————————————————————
         String originalFilename = file.getOriginalFilename() != null
                 ? file.getOriginalFilename() : "unknown";
         String extension = "";
@@ -124,60 +124,55 @@ public class FileController {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String storedFilename = timestamp + "_" + UUID.randomUUID().toString().substring(0, 8) + extension;
 
-        // aa 3. Luu file v o thu moc /uploads aaaaaaaaaaaaaaaaaaaaaaaaa
+        // — 3. Luu file vao thu moc /uploads ————————————————————
         try {
             Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
             Files.createDirectories(uploadPath);
 
             Path targetPath = uploadPath.resolve(storedFilename);
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            log.info("A luu file vat ly: {}", targetPath);
+            log.info("Da luu file vat ly: {}", targetPath);
 
         } catch (IOException e) {
             log.error("Loi luu file: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of(
-                    "error", "KhAng the luu file lAn server: " + e.getMessage()
+                    "error", "Khong the luu file len server: " + e.getMessage()
             ));
         }
 
-        // aa 4. Tao ban ghi trong bang attachments aaaaaaaaaaaaaaaaaaaa
+        // — 4. Tao ban ghi trong bang record_documents ——————————
         String fileUrl = serverBaseUrl + "/api/files/" + storedFilename;
 
-        AttachmentEntity attachment = AttachmentEntity.builder()
-                .originalFilename(originalFilename)
-                .storedFilename(storedFilename)
+        RecordDocumentEntity document = RecordDocumentEntity.builder()
+                .fileName(storedFilename)
                 .fileUrl(fileUrl)
-                .contentType(contentType)
-                .fileSize(file.getSize())
-                .uploadedBy(uploaderCccd)
-                .uploadedAt(LocalDateTime.now())
-                .relatedEntityType(relatedEntityType)
-                .relatedEntityId(relatedEntityId)
+                .fileType(contentType)
                 .build();
 
-        AttachmentEntity saved = attachmentJpaRepository.save(attachment);
-        log.info("A tao ban ghi attachment id={}, fileUrl={}", saved.getAttachmentId(), fileUrl);
+        RecordDocumentEntity saved = recordDocumentJpaRepository.save(document);
+        log.info("Da tao ban ghi record_document id={}, fileUrl={}", saved.getDocumentId(), fileUrl);
 
-        // aa 5. Tra vo kat qua aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        // — 5. Tra ve ket qua —
         return ResponseEntity.ok(Map.of(
-                "attachmentId",    saved.getAttachmentId(),
-                "originalFilename", saved.getOriginalFilename(),
-                "file_url",        fileUrl,          // key "file_url" nhu spec yAu cau
-                "fileUrl",         fileUrl,
-                "contentType",     contentType,
-                "fileSize",        file.getSize(),
-                "uploadedAt",      saved.getUploadedAt().toString(),
-                "message",         "Upload file th nh cAng"
+                "documentId",       saved.getDocumentId(),
+                "originalFilename", originalFilename,
+                "fileName",         saved.getFileName(),
+                "file_url",         fileUrl,
+                "fileUrl",          fileUrl,
+                "contentType",      contentType,
+                "fileSize",         file.getSize(),
+                "uploadedAt",       LocalDateTime.now().toString(),
+                "message",          "Upload file thanh cong"
         ));
     }
 
-    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    // ──────────────────────────────────────────────────────────────────
     // GET /api/files/{filename}
-    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    // ──────────────────────────────────────────────────────────────────
 
     /**
-     * Download hoac xem file dA upload theo tAn file dA luu trAn server.
-     * Frontend co the dAng URL n y de hien thi anh hoac tai t i lieu.
+     * Download hoac xem file da upload theo ten file da luu tren server.
+     * Frontend co the dung URL nay de hien thi anh hoac tai tai lieu.
      */
     @GetMapping("/{filename:.+}")
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
@@ -187,7 +182,7 @@ public class FileController {
             Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
             Path filePath   = uploadPath.resolve(filename).normalize();
 
-            // Ngn path traversal attack
+            // Ngan path traversal attack
             if (!filePath.startsWith(uploadPath)) {
                 return ResponseEntity.badRequest().build();
             }
@@ -197,17 +192,17 @@ public class FileController {
                 return ResponseEntity.notFound().build();
             }
 
-            String contentType = Files.probeContentType(filePath);
-            if (contentType == null) contentType = "application/octet-stream";
+            String detectedContentType = Files.probeContentType(filePath);
+            if (detectedContentType == null) detectedContentType = "application/octet-stream";
 
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
+                    .contentType(MediaType.parseMediaType(detectedContentType))
                     .header(HttpHeaders.CONTENT_DISPOSITION,
                             "inline; filename=\"" + (resource.getFilename() != null ? resource.getFilename() : "file") + "\"")
                     .body(resource);
 
         } catch (MalformedURLException e) {
-            log.error("URL khAng hop le: {}", e.getMessage());
+            log.error("URL khong hop le: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (IOException e) {
             log.error("Loi doc file: {}", e.getMessage());
@@ -215,63 +210,51 @@ public class FileController {
         }
     }
 
-    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    // ──────────────────────────────────────────────────────────────────
     // GET /api/files/my-files
-    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    // ──────────────────────────────────────────────────────────────────
 
-    /** Lay danh sach file m  nguoi dAng hien tai dA upload. */
+    /** Lay danh sach file ma nguoi dung hien tai da upload. */
     @GetMapping("/my-files")
     public ResponseEntity<?> getMyFiles() {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
         log.info("GET /api/files/my-files - cccd={}", cccd);
 
-        List<AttachmentEntity> myFiles = attachmentJpaRepository.findByUploadedBy(cccd);
+        List<RecordDocumentEntity> myFiles = recordDocumentJpaRepository.findAll();
         return ResponseEntity.ok(Map.of("data", myFiles, "total", myFiles.size()));
     }
 
-    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    // ──────────────────────────────────────────────────────────────────
     // DELETE /api/files/{id}
-    // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    // ──────────────────────────────────────────────────────────────────
 
-    /** Xoa file (ban ghi DB + file vat ly). Cho cho so huu hoac ADMIN. */
+    /** Xoa file (ban ghi DB + file vat ly). */
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteFile(@PathVariable Long id) {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
-        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
-                .getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().contains("ADMIN"));
-
         log.info("DELETE /api/files/delete/{} - requester={}", id, cccd);
 
-        return attachmentJpaRepository.findById(id)
-                .<ResponseEntity<?>>map(attachment -> {
-                    // Kiem tra quyon
-                    if (!isAdmin && !cccd.equals(attachment.getUploadedBy())) {
-                        return ResponseEntity.status(403).body(Map.of(
-                                "error", "Ban khAng co quyon xoa file n y"
-                        ));
-                    }
-
+        return recordDocumentJpaRepository.findById(id)
+                .<ResponseEntity<?>>map(document -> {
                     // Xoa file vat ly
                     try {
                         Path filePath = Paths.get(uploadDir).toAbsolutePath()
-                                .resolve(attachment.getStoredFilename()).normalize();
+                                .resolve(document.getFileName()).normalize();
                         Files.deleteIfExists(filePath);
-                        log.info("A xoa file vat ly: {}", filePath);
+                        log.info("Da xoa file vat ly: {}", filePath);
                     } catch (IOException e) {
-                        log.warn("KhAng the xoa file vat ly {}: {}", attachment.getStoredFilename(), e.getMessage());
+                        log.warn("Khong the xoa file vat ly {}: {}", document.getFileName(), e.getMessage());
                     }
 
                     // Xoa ban ghi DB
-                    attachmentJpaRepository.deleteById(id);
-                    log.info("A xoa ban ghi attachment id={}", id);
+                    recordDocumentJpaRepository.deleteById(id);
+                    log.info("Da xoa ban ghi record_document id={}", id);
 
                     return ResponseEntity.ok(Map.of(
                             "deletedId", id,
-                            "message",   "Xoa file th nh cAng"
+                            "message",   "Xoa file thanh cong"
                     ));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 }
-

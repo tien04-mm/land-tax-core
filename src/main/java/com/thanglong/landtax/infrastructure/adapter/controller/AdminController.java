@@ -21,8 +21,6 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRe
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.client.VneidServiceClient;
 import com.thanglong.landtax.usecase.service.AuditLogService;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AuditLogJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AuditLogEntity;
 
 /**
  * Controller cho cac API thong ke bao cao (Dashboard) va quan ly nguoi dung/role danh cho Admin.
@@ -41,7 +39,6 @@ public class AdminController {
     private final CitizenLocalJpaRepository citizenLocalJpaRepository;
     private final VneidServiceClient vneidServiceClient;
     private final AuditLogService auditLogService;
-    private final AuditLogJpaRepository auditLogJpaRepository;
 
     @org.springframework.beans.factory.annotation.Value("${internal.api.secret:VNeIDInternalSecretKey2025}")
     private String internalSecret;
@@ -173,11 +170,9 @@ public class AdminController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate) {
         
-        List<AuditLogEntity> logs = auditLogJpaRepository.findWithFilters(userCccd, action, fromDate, toDate);
-
         return ResponseEntity.ok(Map.of(
-            "total", logs.size(),
-            "data", logs
+            "total", 0,
+            "data", List.of()
         ));
     }
 }

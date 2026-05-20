@@ -10,5 +10,6 @@ import java.util.List;
 public interface TaxDeclarationRepository extends JpaRepository<TaxDeclarationEntity, Integer> {
     List<TaxDeclarationEntity> findBySenderCccdOrderBySubmittedAtDesc(String senderCccd);
     List<TaxDeclarationEntity> findByCitizenIdAndParcelIdAndStatus(Integer citizenId, Integer parcelId, String status);
+    java.util.Optional<TaxDeclarationEntity> findByRecordId(Integer recordId);
     long countByStatus(String status);
 }

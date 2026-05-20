@@ -57,4 +57,53 @@ public class AuthController {
             ));
         }
     }
+
+    @Operation(summary = "Lam moi Access Token tu Refresh Token")
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> body) {
+        try {
+            String refreshToken = body.get("refreshToken");
+            if (refreshToken == null || refreshToken.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "refreshToken is required"
+                ));
+            }
+            AuthResponse response = authService.refresh(refreshToken);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Lam moi token thanh cong",
+                "data", response
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", e.getMessage()
+            ));
+        }
+    }
+
+    @Operation(summary = "Dang xuat va thu hoi Refresh Token")
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestBody Map<String, String> body) {
+        try {
+            String refreshToken = body.get("refreshToken");
+            if (refreshToken == null || refreshToken.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "refreshToken is required"
+                ));
+            }
+            authService.logout(refreshToken);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Dang xuat va thu hoi token thanh cong"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", e.getMessage()
+            ));
+        }
+    }
 }

@@ -45,7 +45,7 @@ public class TaxPaymentEntity {
     @Column(name = "payment_status", length = 20)
     private String paymentStatus;               // UNPAID, PAID, OVERDUE
 
-    @Column(name = "transaction_code", length = 100)
+    @Column(name = "transaction_code", length = 100, unique = true)
     private String transactionCode;
 
     @Column(name = "paid_at")

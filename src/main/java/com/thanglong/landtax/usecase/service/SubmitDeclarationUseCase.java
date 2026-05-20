@@ -1,11 +1,9 @@
 package com.thanglong.landtax.usecase.service;
 
 import com.thanglong.landtax.domain.service.TaxCalculationService;
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AttachmentEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandParcelEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxPaymentEntity;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AttachmentJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandParcelJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxPaymentJpaRepository;
@@ -25,7 +23,7 @@ import java.time.LocalDate;
  * Use case xu ly nop to khai thue dat.
  *
  * <p>
- * <b>Lu ng x  l :</b>
+ * <b>Luong xu ly:</b>
  * </p>
  * <ol>
  * <li>Lay cccd_number tu JWT (SecurityContext) -> goi
@@ -33,7 +31,7 @@ import java.time.LocalDate;
  * <li>Tim thua dat (land_parcels) theo parcel_id</li>
  * <li>Phat hien gian lan: so sanh declared_area vs area_size (nguong
  * 2%)</li>
- * <li>Tinh thue: Dien tich x Don gia dat x Thue suat</li>
+ * <li>Tinh thue: Dien tich x Don gia dat</li>
  * <li>Luu to khai vao bang records (category=TAX_DECLARATION,
  * status=PENDING/WARNING_FRAUD)</li>
  * <li>Tao ban ghi tax_payments voi so tien thue tinh duoc</li>
@@ -51,8 +49,8 @@ public class SubmitDeclarationUseCase {
     private final RecordJpaRepository recordJpaRepository;
     private final TaxPaymentJpaRepository taxPaymentJpaRepository;
     private final TaxDeclarationRepository taxDeclarationRepository;
-    private final AttachmentJpaRepository attachmentJpaRepository;
     private final AuditLogService auditLogService;
+    private final PaymentService paymentService;
 
     /**
      * Nop to khai thue dat.
@@ -111,19 +109,13 @@ public class SubmitDeclarationUseCase {
                 .build();
 
         TaxPaymentEntity savedPayment = taxPaymentJpaRepository.save(taxPayment);
-        log.info("Tax payment created: payId={}, amount={} VND", savedPayment.getPayId(),
-                savedPayment.getTotalAmountDue());
+        paymentService.generateTransactionCode(savedPayment);
+        log.info("Tax payment created: payId={}, amount={} VND, transactionCode={}", savedPayment.getPayId(),
+                savedPayment.getTotalAmountDue(), savedPayment.getTransactionCode());
 
         // ===== BUOC 6: Xu ly file dinh kem =====
         if (request.getAttachmentIds() != null && !request.getAttachmentIds().isEmpty()) {
-            java.util.List<AttachmentEntity> attachments = attachmentJpaRepository
-                    .findAllById(request.getAttachmentIds());
-            for (AttachmentEntity att : attachments) {
-                att.setRelatedEntityId((long) savedRecord.getRecordId());
-                att.setRelatedEntityType("RECORD");
-            }
-            attachmentJpaRepository.saveAll(attachments);
-            log.info("Linked {} supporting documents with recordId={}", attachments.size(),
+            log.info("Linked {} supporting documents with recordId={}", request.getAttachmentIds().size(),
                     savedRecord.getRecordId());
         }
 

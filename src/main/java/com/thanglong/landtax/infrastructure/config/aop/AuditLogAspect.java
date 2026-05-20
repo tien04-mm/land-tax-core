@@ -1,7 +1,5 @@
 package com.thanglong.landtax.infrastructure.config.aop;
 
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AuditLogEntity;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AuditLogJpaRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,16 +12,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.time.LocalDateTime;
-
 @Aspect
 @Component
 @RequiredArgsConstructor
 @Slf4j
 @SuppressWarnings("null")
 public class AuditLogAspect {
-
-    private final AuditLogJpaRepository auditLogRepository;
 
     @AfterReturning("@annotation(com.thanglong.landtax.infrastructure.config.aop.AuditLog)")
     public void logAuditActivity(JoinPoint joinPoint) {
@@ -44,14 +38,6 @@ public class AuditLogAspect {
                 ipAddress = request.getRemoteAddr();
             }
 
-            AuditLogEntity logEntity = AuditLogEntity.builder()
-                    .userCccd(cccd)
-                    .action(action)
-                    .ipAddress(ipAddress)
-                    .timestamp(LocalDateTime.now())
-                    .build();
-
-            auditLogRepository.save(logEntity);
             log.info("[AUDIT LOG] user: {}, action: {}, ip: {}", cccd, action, ipAddress);
 
         } catch (Exception e) {

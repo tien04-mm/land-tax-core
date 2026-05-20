@@ -6,9 +6,6 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * JPA Entity mapping voi bang tax_exempt_subjects trong CSDL.
- */
 @Entity
 @Table(name = "tax_exempt_subjects")
 @Getter
@@ -26,22 +23,22 @@ public class TaxExemptSubjectEntity {
     @Column(name = "citizen_id", nullable = false)
     private Integer citizenId;
 
-    @Column(name = "full_name", length = 100, nullable = false)
+    @Column(name = "uploaded_by_account")
+    private Integer uploadedByAccount;
+
+    @Column(name = "full_name", length = 150)
     private String fullName;
 
     @Column(name = "exemption_reason", columnDefinition = "TEXT")
     private String exemptionReason;
 
-    @Column(name = "discount_rate", nullable = false, precision = 5, scale = 2)
+    @Column(name = "discount_rate", precision = 5, scale = 2)
     private BigDecimal discountRate;
 
-    @Column(name = "applied_year", nullable = false)
+    @Column(name = "applied_year")
     private Integer appliedYear;
 
-    @Column(name = "uploaded_by_account", nullable = false)
-    private Integer uploadedByAccount;
-
-    @Column(name = "uploaded_at", nullable = false)
+    @Column(name = "uploaded_at")
     private LocalDateTime uploadedAt;
 
     @PrePersist

@@ -27,10 +27,10 @@ public class RecordEntity {
     private Integer recordId;
 
     @Column(name = "citizen_id", nullable = false)
-    private Integer citizenId;                  // FK  citizens.citizen_id
+    private Integer citizenId;                  // FK → citizens.citizen_id
 
     @Column(name = "land_parcel_id", nullable = false)
-    private Integer landParcelId;               // FK  land_parcels.land_parcel_id
+    private Integer landParcelId;               // FK → land_parcels.land_parcel_id
 
     @Column(name = "record_category", nullable = false, length = 50)
     private String recordCategory;              // TAX_DECLARATION, TRANSFER, ...
@@ -40,6 +40,10 @@ public class RecordEntity {
 
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
+
+    /** Quan he 1-1 voi to khai thue (3NF: tach rieng du lieu ke khai ra bang tax_declarations) */
+    @OneToOne(mappedBy = "record", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private TaxDeclarationEntity taxDeclaration;
 
     @PrePersist
     protected void onCreate() {

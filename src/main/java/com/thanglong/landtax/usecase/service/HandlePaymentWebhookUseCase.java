@@ -5,7 +5,6 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEnt
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxPaymentEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxPaymentJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxBillRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.NotificationJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.NotificationEntity;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +36,6 @@ public class HandlePaymentWebhookUseCase {
     private final TaxPaymentJpaRepository taxPaymentJpaRepository;
     private final RecordJpaRepository recordJpaRepository;
     private final NotificationService notificationService;
-    private final TaxBillRepository taxBillRepository;
     private final NotificationJpaRepository notificationJpaRepository;
     private final AuditLogService auditLogService;
 
@@ -72,26 +70,7 @@ public class HandlePaymentWebhookUseCase {
         log.info("Payment updated to PAID: payId={}, amount={} VND",
                 payment.getPayId(), payment.getTotalAmountDue());
 
-        // Cap nhat TaxBillEntity (neu co)
-        taxBillRepository.findById(payment.getPayId()).ifPresent(bill -> {
-            bill.setStatus("PAID");
-            taxBillRepository.save(bill);
-            log.info("TaxBillEntity updated to PAID: billId={}", bill.getBillId());
-            
-            // Tu dong chen ban ghi thong bao
-            NotificationEntity noti = NotificationEntity.builder()
-                .accountId(0) // Gia tri dummy neu khong dung account_id
-                .notiType("PAYMENT_SUCCESS")
-                .cccdNumber(bill.getCccdNumber())
-                .message("Bill for declaration " + bill.getDeclarationId() + " has been paid successfully")
-                .title("Payment Success")
-                .content("Bill for declaration " + bill.getDeclarationId() + " has been paid successfully")
-                .isRead(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-            notificationJpaRepository.save(noti);
-            log.info("Created notification for CCCD: {}", bill.getCccdNumber());
-        });
+
 
         // ===== BUOC 3: Cap nhat records -> COMPLETED =====
         if (payment.getRecordId() != null) {

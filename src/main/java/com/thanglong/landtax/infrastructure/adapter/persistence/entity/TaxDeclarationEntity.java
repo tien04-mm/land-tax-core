@@ -17,7 +17,15 @@ public class TaxDeclarationEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    @Column(name = "declaration_id")
+    private Integer declarationId;
+
+    @Column(name = "record_id")
+    private Integer recordId;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "record_id", insertable = false, updatable = false)
+    private RecordEntity record;
 
     @Column(name = "citizen_id")
     private Integer citizenId;

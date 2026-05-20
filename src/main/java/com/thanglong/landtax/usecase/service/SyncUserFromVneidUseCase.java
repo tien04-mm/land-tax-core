@@ -92,8 +92,6 @@ public class SyncUserFromVneidUseCase {
         CitizenLocalEntity newCitizen = CitizenLocalEntity.builder()
                 .cccdNumber(java.util.Optional.ofNullable(vneidData.getCccdNumber()).orElse(cccdNumber))
                 .fullName(java.util.Optional.ofNullable(vneidData.getFullName()).orElse("Unknown"))
-                .dateOfBirth(vneidData.getDob())
-                .gender(java.util.Optional.ofNullable(vneidData.getGender()).orElse("UNKNOWN"))
                 .email(vneidData.getEmail())
                 .phoneNumber(vneidData.getPhoneNumber())
                 .build();

@@ -48,7 +48,7 @@ public class TaxDeclarationService {
 
     private TaxDeclarationResponse mapToResponse(TaxDeclarationEntity entity) {
         return TaxDeclarationResponse.builder()
-                .recordId(entity.getId())
+                .recordId(entity.getRecordId())
                 .citizenId(entity.getCitizenId())
                 .parcelId(entity.getParcelId())
                 .taxYear(entity.getTaxYear())

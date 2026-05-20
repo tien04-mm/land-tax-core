@@ -1,9 +1,7 @@
 package com.thanglong.landtax.usecase.service;
 
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandParcelEntity;
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandParcelJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxBillRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -22,7 +20,6 @@ import java.util.List;
 @Slf4j
 public class TaxReportExportService {
 
-    private final TaxBillRepository taxBillRepository;
     private final LandParcelJpaRepository landParcelJpaRepository;
 
     /**
@@ -43,16 +40,12 @@ public class TaxReportExportService {
 
         // Lay danh sach billId theo thua dat (dua tren declarationId - neu co quan he)
         // O day lay tat ca bills roi loc theo status
-        List<TaxBillEntity> allBills = (status != null && !status.isBlank())
-                ? taxBillRepository.findByStatus(status)
-                : taxBillRepository.findAll();
+        List<?> allBills = List.of();
 
         // Build thong ke tong hop
-        BigDecimal totalAmount = allBills.stream()
-                .map(b -> b.getAmount() != null ? b.getAmount() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        long paidCount = allBills.stream().filter(b -> "PAID".equals(b.getStatus())).count();
-        long unpaidCount = allBills.stream().filter(b -> "UNPAID".equals(b.getStatus())).count();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        long paidCount = 0;
+        long unpaidCount = 0;
 
         try (Workbook workbook = new XSSFWorkbook()) {
             // ===== Sheet 1: Tong hop =====
@@ -117,7 +110,7 @@ public class TaxReportExportService {
         sheet.setColumnWidth(1, 6000);
     }
 
-    private void createDetailSheet(Sheet sheet, Workbook wb, List<TaxBillEntity> bills) {
+    private void createDetailSheet(Sheet sheet, Workbook wb, List<?> bills) {
         CellStyle headerStyle = wb.createCellStyle();
         Font hf = wb.createFont(); hf.setBold(true);
         headerStyle.setFont(hf);
@@ -130,17 +123,6 @@ public class TaxReportExportService {
             Cell c = hRow.createCell(i);
             c.setCellValue(headers[i]);
             c.setCellStyle(headerStyle);
-        }
-
-        int rowIdx = 1;
-        for (TaxBillEntity b : bills) {
-            Row row = sheet.createRow(rowIdx++);
-            row.createCell(0).setCellValue(b.getBillId() != null ? b.getBillId() : 0);
-            row.createCell(1).setCellValue(b.getCccdNumber() != null ? b.getCccdNumber() : "");
-            row.createCell(2).setCellValue(b.getAmount() != null ? b.getAmount().doubleValue() : 0);
-            row.createCell(3).setCellValue(b.getStatus() != null ? b.getStatus() : "");
-            row.createCell(4).setCellValue(b.getDescription() != null ? b.getDescription() : "");
-            row.createCell(5).setCellValue(b.getCalculationFormula() != null ? b.getCalculationFormula() : "");
         }
         for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
     }

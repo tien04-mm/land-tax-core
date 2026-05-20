@@ -49,7 +49,7 @@ public class VerifyDeclarationUseCase {
             TaxDeclarationEntity declaration = declarations.get(0);
             declaration.setStatus("VERIFIED");
             taxDeclarationRepository.save(declaration);
-            log.info("  c p nh t tr ng th i t  khai {} sang VERIFIED", declaration.getId());
+            log.info("  c p nh t tr ng th i t  khai {} sang VERIFIED", declaration.getDeclarationId());
         }
 
         // 5. Ghi Audit Log

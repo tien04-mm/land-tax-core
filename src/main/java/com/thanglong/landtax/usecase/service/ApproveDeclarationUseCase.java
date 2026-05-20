@@ -5,7 +5,6 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AccountEn
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.ProcessingLogEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxPaymentEntity;
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandParcelEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandPriceEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRepository;
@@ -13,7 +12,6 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.ProcessingLo
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxPaymentJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxDeclarationRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxBillRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandParcelJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandPriceJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity;
@@ -64,7 +62,6 @@ public class ApproveDeclarationUseCase {
     private final SyncUserFromVneidUseCase syncUserFromVneidUseCase;
     private final AuditLogService auditLogService;
     private final TaxDeclarationRepository taxDeclarationRepository;
-    private final TaxBillRepository taxBillRepository;
     private final LandParcelJpaRepository landParcelJpaRepository;
     private final LandPriceJpaRepository landPriceJpaRepository;
 
@@ -134,16 +131,7 @@ public class ApproveDeclarationUseCase {
 
             taxDeclarationRepository.save(declaration);
 
-            // Sinh Hoa don (Bill)
-            TaxBillEntity bill = TaxBillEntity.builder()
-                    .cccdNumber(declaration.getSenderCccd())
-                    .amount(taxAmount)
-                    .status("UNPAID")
-                    .description("Hoa don thanh toan thue dat cho ho so " + recordId)
-                    .declarationId(declaration.getId())
-                    .basePrice(declaration.getUnitPrice())
-                    .build();
-            taxBillRepository.save(bill);
+
         }
 
         log.info("Record {} status updated: {} -> APPROVED", recordId, oldStatus);

@@ -4,12 +4,9 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxExempt
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface TaxExemptSubjectJpaRepository extends JpaRepository<TaxExemptSubjectEntity, Integer> {
-    
-    List<TaxExemptSubjectEntity> findByCitizenId(Integer citizenId);
-    
-    List<TaxExemptSubjectEntity> findByAppliedYear(Integer appliedYear);
+public interface TaxExemptSubjectRepository extends JpaRepository<TaxExemptSubjectEntity, Integer> {
+    Optional<TaxExemptSubjectEntity> findByCitizenIdAndAppliedYear(Integer citizenId, Integer appliedYear);
 }

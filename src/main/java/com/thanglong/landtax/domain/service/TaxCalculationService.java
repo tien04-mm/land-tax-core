@@ -5,26 +5,22 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandPrice
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxExemptSubjectEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandParcelJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandPriceJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxExemptSubjectJpaRepository;
+import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxExemptSubjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Optional;
 
 /**
- * Domain service xo ly logic tAnh toan thua dat.
+ * Domain service xu ly logic tinh thue dat.
  *
- * <p><b>CAng thoc tAnh thua:</b></p>
+ * <p><b>Cong thuc tinh thue:</b></p>
  * <pre>
- *   Tion thua = Dien tAch (mo) A on gia dat (VN/mo) A Thua suat
+ *   Tien thue = Dien tich x Don gia dat x (1 - discountRate / 100)
  * </pre>
- *
- * <p><b>Tra cou du lieu:</b></p>
- * <ul>
- *   <li>on gia dat: tu bang land_prices doa trAn land_type_id + area_id coa thoa dat</li>
- * </ul>
  */
 @Service
 @RequiredArgsConstructor
@@ -34,60 +30,59 @@ public class TaxCalculationService {
 
     private final LandParcelJpaRepository landParcelJpaRepository;
     private final LandPriceJpaRepository landPriceJpaRepository;
-
-    private final TaxExemptSubjectJpaRepository taxExemptSubjectJpaRepository;
+    private final TaxExemptSubjectRepository taxExemptSubjectRepository;
 
     /**
-     * TAnh thua dat cho mot thoa dat co the.
+     * Tinh thue dat cho mot thua dat cu the.
+     * Cong thuc: Tien thue = Dien tich x Don gia dat x (1 - discountRate / 100)
      *
-     * @param parcelId  ID thoa dat trong bang land_parcels
-     * @param citizenId ID coa cAng dan de kiem tra mien giam
-     * @param year      Nm tAnh thua
-     * @return Kat qua tAnh thua bao gom so tion, don gia, moc mien giam
-     * @throws RuntimeException nau khAng tim thay thoa dat, don gia
+     * @param parcelId  ID thua dat trong bang land_parcels
+     * @param citizenId ID cua cong dan
+     * @param year      Nam tinh thue
+     * @return Ket qua tinh thue bao gom so tien, don gia
+     * @throws RuntimeException neu khong tim thay thua dat, don gia
      */
     public TaxCalculationResult calculateTax(Integer parcelId, Integer citizenId, Integer year) {
-        // ===== 1. Tim thAng tin thoa dat =====
+        // ===== 1. Tim thong tin thua dat =====
         LandParcelEntity parcel = landParcelJpaRepository.findById(parcelId)
-                .orElseThrow(() -> new RuntimeException("Thoa dat khAng ton tai: " + parcelId));
+                .orElseThrow(() -> new RuntimeException("Thua dat khong ton tai: " + parcelId));
 
         BigDecimal actualArea = parcel.getAreaSize();
 
-        // ===== 2. Tim don gia dat theo loai dat + khu voc =====
+        // ===== 2. Tim don gia dat theo loai dat + khu vuc =====
         LandPriceEntity landPrice = landPriceJpaRepository
                 .findLatestPrice(parcel.getLandTypeId(), parcel.getAreaId())
                 .orElseThrow(() -> new RuntimeException(
-                        String.format("KhAng tim thay don gia dat cho landTypeId=%d, areaId=%d",
+                        String.format("Khong tim thay don gia dat cho landTypeId=%d, areaId=%d",
                                 parcel.getLandTypeId(), parcel.getAreaId())));
 
-        // ===== 3. Kiem tra mien giam =====
+        BigDecimal unitPrice = landPrice.getUnitPrice();
+
+        // ===== 3. Kiem tra mien giam thue (TaxExemptSubject) =====
         BigDecimal exemptionRate = BigDecimal.ZERO;
-        java.util.List<TaxExemptSubjectEntity> exemptions = 
-                taxExemptSubjectJpaRepository.findByCitizenId(citizenId);
-        
-        if (!exemptions.isEmpty()) {
-            // Lay moc mien giam cao nhat nau co nhiou record
-            exemptionRate = exemptions.stream()
-                    .map(TaxExemptSubjectEntity::getDiscountRate)
-                    .max(BigDecimal::compareTo)
-                    .orElse(BigDecimal.ZERO);
+        if (citizenId != null) {
+            Optional<TaxExemptSubjectEntity> exemptOpt = taxExemptSubjectRepository
+                    .findByCitizenIdAndAppliedYear(citizenId, year);
+            if (exemptOpt.isPresent()) {
+                exemptionRate = exemptOpt.get().getDiscountRate();
+                log.info("Citizen {} is exempt for year {} with discount rate {}%", citizenId, year, exemptionRate);
+            }
         }
 
-        // ===== 4. TAnh tion thua =====
-        // Tion thua = Dien tAch A on gia A (1 - Exemption Rate)
-        BigDecimal unitPrice = landPrice.getUnitPrice();
-        
-        BigDecimal rateMultiplier = BigDecimal.ONE.subtract(exemptionRate);
-        if (rateMultiplier.compareTo(BigDecimal.ZERO) < 0) rateMultiplier = BigDecimal.ZERO; // KhAng the am
+        // ===== 4. Tinh tien thue =====
+        // multiplier = 1 - (exemptionRate / 100)
+        BigDecimal multiplier = BigDecimal.ONE.subtract(
+                exemptionRate.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP)
+        );
 
         BigDecimal taxAmount = actualArea
                 .multiply(unitPrice)
-                .multiply(rateMultiplier)
+                .multiply(multiplier)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        log.info("Tax calculated for parcel {}: area={} mo, unitPrice={} VN/mo, " +
-                        "exemptionRate={}, tax={} VN, year={}",
-                parcelId, actualArea, unitPrice, exemptionRate, taxAmount, year);
+        log.info("Tax calculated for parcel {}: area={} m2, unitPrice={} VND/m2, " +
+                        "exemptionRate={}% (multiplier={}), tax={} VND, year={}",
+                parcelId, actualArea, unitPrice, exemptionRate, multiplier, taxAmount, year);
 
         return TaxCalculationResult.builder()
                 .taxAmount(taxAmount)
@@ -97,7 +92,7 @@ public class TaxCalculationService {
                 .build();
     }
 
-    // ===== Inner classes cho kat qua =====
+    // ===== Inner classes cho ket qua =====
 
     @lombok.Builder
     @lombok.Getter
@@ -108,4 +103,3 @@ public class TaxCalculationService {
         private final BigDecimal actualArea;
     }
 }
-

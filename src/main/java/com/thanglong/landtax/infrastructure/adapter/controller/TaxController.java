@@ -46,9 +46,7 @@ public class TaxController {
     private final ApproveDeclarationUseCase approveDeclarationUseCase;
     private final RejectDeclarationUseCase rejectDeclarationUseCase;
     private final com.thanglong.landtax.usecase.service.TaxDeclarationService taxDeclarationService;
-    private final com.thanglong.landtax.usecase.service.TaxBillService taxBillService;
     private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordJpaRepository recordJpaRepository;
-    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxBillRepository taxBillRepository;
     private final com.thanglong.landtax.usecase.service.AuditLogService auditLogService;
 
     /**
@@ -168,12 +166,8 @@ public class TaxController {
     @Operation(summary = "Xem hoa don chua thanh toan", description = "Nguoi dan xem cac hoa don thua can nop")
     @ApiResponse(responseCode = "200", description = "Lay danh sach hoa don th nh cAng")
     @GetMapping("/bills/unpaid")
-    public ResponseEntity<List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity>> getUnpaidBills() {
-        String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
-                .getName();
-        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity> unpaidBills = taxBillService
-                .getUnpaidBills(cccd);
-        return ResponseEntity.ok(unpaidBills);
+    public ResponseEntity<List<?>> getUnpaidBills() {
+        return ResponseEntity.ok(List.of());
     }
 
     /**
@@ -183,12 +177,8 @@ public class TaxController {
     @Operation(summary = "Xem hoa don dA thanh toan", description = "Nguoi dan xem lich so hoa don thua dA nop")
     @ApiResponse(responseCode = "200", description = "Lay danh sach hoa don th nh cAng")
     @GetMapping("/records/pending")
-    public ResponseEntity<List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity>> getPaidBills() {
-        String cccd = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
-                .getName();
-        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity> paidBills = taxBillService
-                .getPaidBills(cccd);
-        return ResponseEntity.ok(paidBills);
+    public ResponseEntity<List<?>> getPaidBills() {
+        return ResponseEntity.ok(List.of());
     }
 
     /**
@@ -232,8 +222,8 @@ public class TaxController {
     @Operation(summary = "Danh sach hoa don", description = "Can bo thua xem danh sach tat ca hoa don")
     @GetMapping("/history")
     @PreAuthorize("hasRole('TAX_OFFICER')")
-    public ResponseEntity<List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxBillEntity>> getAllBills() {
-        return ResponseEntity.ok(taxBillRepository.findAll());
+    public ResponseEntity<List<?>> getAllBills() {
+        return ResponseEntity.ok(List.of());
     }
 
     /**

@@ -113,7 +113,7 @@ public class RejectDeclarationUseCase {
             declaration.setStatus("REJECTED");
             declaration.setReviewNote(request.getProcessorNotes());
             taxDeclarationRepository.save(declaration);
-            log.info("  c p nh t tr ng th i t  khai {} sang REJECTED", declaration.getId());
+            log.info("  c p nh t tr ng th i t  khai {} sang REJECTED", declaration.getDeclarationId());
         }
 
         log.info("Record {} status updated: {}   REJECTED", recordId, oldStatus);

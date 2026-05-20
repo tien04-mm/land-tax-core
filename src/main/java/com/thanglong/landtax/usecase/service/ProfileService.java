@@ -51,17 +51,8 @@ public class ProfileService {
 
         citizen.setCccdNumber(cccdNumber);
         citizen.setFullName(vneidData.getFullName());
-        citizen.setDateOfBirth(vneidData.getDob());
-        citizen.setGender(vneidData.getGender());
         citizen.setEmail(vneidData.getEmail());
         citizen.setPhoneNumber(vneidData.getPhoneNumber());
-
-        if (citizen.getAddress() == null || citizen.getAddress().isEmpty()) {
-            citizen.setAddress("H  N i (Mock Address t  VNeID)");
-        }
-
-        citizen.setLastSyncAt(LocalDateTime.now());
-        citizen.setUpdatedAt(LocalDateTime.now());
 
         return citizenLocalJpaRepository.save(citizen);
     }

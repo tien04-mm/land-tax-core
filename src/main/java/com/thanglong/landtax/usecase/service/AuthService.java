@@ -3,11 +3,11 @@ package com.thanglong.landtax.usecase.service;
 import com.thanglong.landtax.infrastructure.adapter.client.VneidServiceClient;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AccountEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity;
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RoleDelegationEntity;
+import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RefreshTokenEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RoleEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RoleDelegationJpaRepository;
+import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RefreshTokenJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RoleJpaRepository;
 import com.thanglong.landtax.infrastructure.security.JwtProvider;
 import com.thanglong.landtax.usecase.dto.ApiResponse;
@@ -20,8 +20,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -34,8 +36,8 @@ public class AuthService {
     private final CitizenLocalJpaRepository citizenLocalJpaRepository;
     private final AccountJpaRepository accountJpaRepository;
     private final RoleJpaRepository roleJpaRepository;
-    private final RoleDelegationJpaRepository roleDelegationJpaRepository;
     private final JwtProvider jwtProvider;
+    private final RefreshTokenJpaRepository refreshTokenJpaRepository;
 
     @Transactional
     public AuthResponse qrLogin(String qrToken) {
@@ -63,15 +65,19 @@ public class AuthService {
         AccountEntity account = accountJpaRepository.findByCitizenId(citizenId)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
 
-        // 3. Tim tat ca cac vai tro
+        // 3. Tim tat ca cac vai tro (chi lay role goc tu bang roles)
         List<String> roles = getAllRolesForAccount(account);
-        String activeRole = roles.get(0); // Mac dinh lay vai tro dau tien (thuong la vai tro goc)
+        String activeRole = roles.get(0);
 
         // 4. Sinh JWT Token
         String token = jwtProvider.generateToken(cccdNumber, citizen.getEmail(), activeRole, roles, citizenId);
 
+        // 5. Sinh Refresh Token
+        String refreshToken = createRefreshToken(account.getAccountId());
+
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
                 .userId(citizenId)
                 .fullName(citizen.getFullName())
                 .cccdNumber(cccdNumber)
@@ -101,8 +107,12 @@ public class AuthService {
         // Sinh JWT Token moi voi activeRole moi
         String token = jwtProvider.generateToken(cccdNumber, citizen.getEmail(), targetRole, roles, citizen.getCitizenId());
 
+        // Sinh Refresh Token moi
+        String refreshToken = createRefreshToken(account.getAccountId());
+
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
                 .userId(citizen.getCitizenId())
                 .fullName(citizen.getFullName())
                 .cccdNumber(cccdNumber)
@@ -111,32 +121,94 @@ public class AuthService {
                 .build();
     }
 
+    /**
+     * Sinh Refresh Token cho account.
+     */
+    @Transactional
+    public String createRefreshToken(Integer accountId) {
+        refreshTokenJpaRepository.deleteByAccountId(accountId);
+
+        String token = UUID.randomUUID().toString();
+        RefreshTokenEntity entity = RefreshTokenEntity.builder()
+                .token(token)
+                .accountId(accountId)
+                .expiresAt(LocalDateTime.now().plusDays(7)) // Het han sau 7 ngay
+                .isRevoked(false)
+                .build();
+        refreshTokenJpaRepository.save(entity);
+        return token;
+    }
+
+    /**
+     * Lam moi Access Token bang Refresh Token.
+     */
+    @Transactional
+    public AuthResponse refresh(String refreshToken) {
+        log.info("Refreshing access token using refresh token");
+
+        RefreshTokenEntity tokenEntity = refreshTokenJpaRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Refresh token khong ton tai"));
+
+        if (tokenEntity.isRevoked()) {
+            throw new RuntimeException("Refresh token da bi thu hoi (revoked)");
+        }
+
+        if (tokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Refresh token da het han");
+        }
+
+        AccountEntity account = accountJpaRepository.findById(tokenEntity.getAccountId())
+                .orElseThrow(() -> new RuntimeException("Account khong ton tai"));
+
+        CitizenLocalEntity citizen = citizenLocalJpaRepository.findById(account.getCitizenId())
+                .orElseThrow(() -> new RuntimeException("Citizen khong ton tai"));
+
+        List<String> roles = getAllRolesForAccount(account);
+        String activeRole = roles.get(0);
+
+        String newAccessToken = jwtProvider.generateToken(
+                citizen.getCccdNumber(),
+                citizen.getEmail(),
+                activeRole,
+                roles,
+                citizen.getCitizenId()
+        );
+
+        return AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(refreshToken)
+                .userId(citizen.getCitizenId())
+                .fullName(citizen.getFullName())
+                .cccdNumber(citizen.getCccdNumber())
+                .activeRole(activeRole)
+                .roles(roles)
+                .build();
+    }
+
+    /**
+     * Dang xuat (thu hoi Refresh Token).
+     */
+    @Transactional
+    public void logout(String refreshToken) {
+        log.info("Logging out — revoking refresh token");
+        refreshTokenJpaRepository.findByToken(refreshToken).ifPresent(entity -> {
+            entity.setRevoked(true);
+            refreshTokenJpaRepository.save(entity);
+            log.info("Refresh token {} has been revoked", refreshToken);
+        });
+    }
+
+    /**
+     * Lay danh sach vai tro cua account.
+     * Chi lay role goc tu bang roles.
+     */
     private List<String> getAllRolesForAccount(AccountEntity account) {
         List<String> roles = new ArrayList<>();
-        
-        // 1. Vai tro goc
+
         RoleEntity baseRole = roleJpaRepository.findById(account.getRoleId())
                 .orElseThrow(() -> new RuntimeException("Invalid role"));
         roles.add(baseRole.getRoleCode());
 
-        // 2. Vai tro duoc uy quyen (dang con hieu luc)
-        List<RoleDelegationEntity> delegations = roleDelegationJpaRepository.findByDelegateeAccountId(account.getAccountId());
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        
-        for (RoleDelegationEntity delegation : delegations) {
-            if ("ACTIVE".equals(delegation.getStatus()) && 
-                delegation.getStartTime().isBefore(now) && 
-                delegation.getEndTime().isAfter(now)) {
-                
-                roleJpaRepository.findById(delegation.getDelegatedRoleId())
-                        .ifPresent(r -> {
-                            if (!roles.contains(r.getRoleCode())) {
-                                roles.add(r.getRoleCode());
-                            }
-                        });
-            }
-        }
-        
         return roles;
     }
 }

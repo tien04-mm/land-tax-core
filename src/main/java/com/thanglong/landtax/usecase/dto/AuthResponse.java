@@ -14,6 +14,7 @@ import java.util.List;
 @Builder
 public class AuthResponse {
     private String token;
+    private String refreshToken;
     private Integer userId;
     private String fullName;
     private String cccdNumber;
