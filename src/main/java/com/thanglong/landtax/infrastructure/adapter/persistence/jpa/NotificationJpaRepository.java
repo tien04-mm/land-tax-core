@@ -14,6 +14,4 @@ public interface NotificationJpaRepository extends JpaRepository<NotificationEnt
     List<NotificationEntity> findByAccountIdAndIsReadFalseOrderByCreatedAtDesc(Integer accountId);
 
     long countByAccountIdAndIsReadFalse(Integer accountId);
-
-    List<NotificationEntity> findByCccdNumberOrderByCreatedAtDesc(String cccdNumber);
 }

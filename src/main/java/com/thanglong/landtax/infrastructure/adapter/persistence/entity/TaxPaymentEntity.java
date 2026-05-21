@@ -39,9 +39,6 @@ public class TaxPaymentEntity {
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
-    @Column(name = "late_fee_amount", precision = 18, scale = 2)
-    private BigDecimal lateFeeAmount;
-
     @Column(name = "payment_status", length = 20)
     private String paymentStatus;               // UNPAID, PAID, OVERDUE
 

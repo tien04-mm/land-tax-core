@@ -139,14 +139,8 @@ public class RecordController {
             Map<String, Object> taxDecl = new LinkedHashMap<>();
             taxDecl.put("id", decl.getDeclarationId());
             taxDecl.put("declaredArea", decl.getDeclaredArea());
-            taxDecl.put("actualArea", decl.getActualArea());
-            taxDecl.put("declaredPurpose", decl.getDeclaredPurpose());
-            taxDecl.put("status", decl.getStatus());
-            taxDecl.put("reviewNote", decl.getReviewNote());
-            taxDecl.put("calculatedTaxAmount", decl.getCalculatedTaxAmount());
-            taxDecl.put("unitPrice", decl.getUnitPrice());
-            taxDecl.put("taxRate", decl.getTaxRate());
-            taxDecl.put("submittedAt", decl.getSubmittedAt());
+            taxDecl.put("declaredPurpose", decl.getDeclaredUsage());
+            taxDecl.put("reviewNote", decl.getDeclarationNotes());
             response.put("taxDeclaration", taxDecl);
         } else {
             response.put("taxDeclaration", null);

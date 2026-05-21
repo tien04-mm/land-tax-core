@@ -70,7 +70,7 @@ public class LandParcelController {
 
         if (!isOfficer) {
             results = results.stream()
-                    .filter(p -> cccd.equals(p.getOwnerCccd()))
+                    .filter(p -> landParcelService.isOwner(p.getLandParcelId(), cccd))
                     .collect(Collectors.toList());
         }
 
@@ -105,7 +105,7 @@ public class LandParcelController {
         }
 
         LandParcelEntity parcel = parcelOpt.get();
-        if (!isOfficer && !cccd.equals(parcel.getOwnerCccd())) {
+        if (!isOfficer && !landParcelService.isOwner(parcel.getLandParcelId(), cccd)) {
             return ResponseEntity.status(403).body(Map.of("error", "Forbidden", "message", "Ban khong co quyen xem thua dat nay"));
         }
 

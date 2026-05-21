@@ -28,34 +28,25 @@ public class ReconciliationLogEntity {
     @Column(name = "transaction_code", length = 100, nullable = false)
     private String transactionCode;
 
-    /** So tien ngan hang gui qua webhook */
-    @Column(name = "bank_amount", precision = 18, scale = 2, nullable = false)
-    private BigDecimal bankAmount;
+    @Column(name = "amount_received", precision = 18, scale = 2, nullable = false)
+    private BigDecimal amountReceived;
 
-    /** So tien he thong ghi nhan trong tax_payments */
-    @Column(name = "system_amount", precision = 18, scale = 2)
-    private BigDecimal systemAmount;
+    @Column(name = "bank_trans_id", length = 100)
+    private String bankTransId;
 
-    /** MATCHED | DISCREPANCY */
-    @Column(name = "match_status", length = 30, nullable = false)
-    private String matchStatus;
+    @Column(name = "webhook_payload", columnDefinition = "LONGTEXT")
+    private String webhookPayload;
 
-    /** FK tro ve tax_payments.pay_id */
-    @Column(name = "tax_payment_id")
-    private Integer taxPaymentId;
+    @Column(name = "status", length = 20)
+    private String status;
 
-    /** Ten ngan hang gui webhook */
-    @Column(name = "bank_name", length = 100)
-    private String bankName;
-
-    /** Thoi diem he thong nhan va xu ly webhook */
-    @Column(name = "matched_at")
-    private LocalDateTime matchedAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-        if (matchedAt == null) {
-            matchedAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
         }
     }
 }

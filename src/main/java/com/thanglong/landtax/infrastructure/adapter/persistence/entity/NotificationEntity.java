@@ -40,11 +40,6 @@ public class NotificationEntity {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "cccd_number", length = 20)
-    private String cccdNumber;
-
-    @Column(name = "message", columnDefinition = "TEXT")
-    private String message;
 
     @PrePersist
     protected void onCreate() {

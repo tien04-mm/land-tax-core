@@ -1,6 +1,5 @@
 package com.thanglong.landtax.usecase.service;
 
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.ReconciliationBatchEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.ReconciliationLogEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxPaymentEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.*;
@@ -20,7 +19,6 @@ public class PaymentService {
 
     private final TaxPaymentJpaRepository taxPaymentJpaRepository;
     private final ReconciliationLogJpaRepository reconciliationLogJpaRepository;
-    private final ReconciliationBatchJpaRepository reconciliationBatchJpaRepository;
     private final RecordJpaRepository recordJpaRepository;
 
     /**
@@ -45,15 +43,14 @@ public class PaymentService {
         TaxPaymentEntity payment = taxPaymentJpaRepository.findByTransactionCode(transactionCode)
                 .orElseThrow(() -> new RuntimeException("Payment not found for transactionCode: " + transactionCode));
 
-        // Tao reconciliation batch
-        String batchCode = "BATCH-" + java.time.LocalDate.now().toString() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        ReconciliationBatchEntity batch = ReconciliationBatchEntity.builder()
-                .batchCode(batchCode)
-                .status("COMPLETED")
-                .build();
-        reconciliationBatchJpaRepository.save(batch);
-
         BigDecimal systemAmount = payment.getTotalAmountDue();
+        if (systemAmount == null) {
+            systemAmount = BigDecimal.ZERO;
+        }
+        if (bankAmount == null) {
+            bankAmount = BigDecimal.ZERO;
+        }
+        
         String matchStatus;
 
         if (bankAmount.compareTo(systemAmount) == 0) {
@@ -73,7 +70,6 @@ public class PaymentService {
                 });
             }
 
-
         } else {
             matchStatus = "DISCREPANCY";
             payment.setPaymentStatus("DISCREPANCY");
@@ -84,11 +80,9 @@ public class PaymentService {
         // Luu reconciliation log
         ReconciliationLogEntity logEntity = ReconciliationLogEntity.builder()
                 .transactionCode(transactionCode)
-                .bankAmount(bankAmount)
-                .systemAmount(systemAmount)
-                .matchStatus(matchStatus)
-                .taxPaymentId(payment.getPayId())
-                .bankName(bankName)
+                .amountReceived(bankAmount)
+                .status(matchStatus)
+                .webhookPayload(bankName)
                 .build();
         reconciliationLogJpaRepository.save(logEntity);
     }

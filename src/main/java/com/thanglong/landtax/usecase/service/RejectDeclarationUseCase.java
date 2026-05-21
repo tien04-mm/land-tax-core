@@ -105,15 +105,13 @@ public class RejectDeclarationUseCase {
         recordJpaRepository.save(record);
 
         // C p nh t TaxDeclarationEntity
-        List<TaxDeclarationEntity> declarations = taxDeclarationRepository
-                .findByCitizenIdAndParcelIdAndStatus(record.getCitizenId(), record.getLandParcelId(), oldStatus);
+        java.util.Optional<TaxDeclarationEntity> optDeclaration = taxDeclarationRepository.findByRecordId(recordId);
 
-        if (!declarations.isEmpty()) {
-            TaxDeclarationEntity declaration = declarations.get(0);
-            declaration.setStatus("REJECTED");
-            declaration.setReviewNote(request.getProcessorNotes());
+        if (optDeclaration.isPresent()) {
+            TaxDeclarationEntity declaration = optDeclaration.get();
+            declaration.setDeclarationNotes(request.getProcessorNotes());
             taxDeclarationRepository.save(declaration);
-            log.info("  c p nh t tr ng th i t  khai {} sang REJECTED", declaration.getDeclarationId());
+            log.info("  c p nh t declarationNotes cho t  khai {}", declaration.getDeclarationId());
         }
 
         log.info("Record {} status updated: {}   REJECTED", recordId, oldStatus);

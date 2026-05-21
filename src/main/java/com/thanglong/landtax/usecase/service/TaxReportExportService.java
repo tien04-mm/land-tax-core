@@ -21,6 +21,8 @@ import java.util.List;
 public class TaxReportExportService {
 
     private final LandParcelJpaRepository landParcelJpaRepository;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandOwnerJpaRepository landOwnerJpaRepository;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository citizenLocalJpaRepository;
 
     /**
      * Xuat bao cao tinh hinh thu thue khu vuc ra file Excel.
@@ -149,7 +151,13 @@ public class TaxReportExportService {
             row.createCell(1).setCellValue(p.getMapSheetNumber() != null ? p.getMapSheetNumber() : "");
             row.createCell(2).setCellValue(p.getAreaSize() != null ? p.getAreaSize().doubleValue() : 0);
             row.createCell(3).setCellValue(p.getAddress() != null ? p.getAddress() : "");
-            row.createCell(4).setCellValue(p.getOwnerCccd() != null ? p.getOwnerCccd() : "");
+            
+            String cccd = landOwnerJpaRepository.findByLandParcelId(p.getLandParcelId()).stream().findFirst()
+                    .flatMap(owner -> citizenLocalJpaRepository.findById(owner.getCitizenId()))
+                    .map(com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity::getCccdNumber)
+                    .orElse("");
+            
+            row.createCell(4).setCellValue(cccd);
             row.createCell(5).setCellValue(p.getLandTypeId() != null ? "Loai " + p.getLandTypeId() : "");
         }
         for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);

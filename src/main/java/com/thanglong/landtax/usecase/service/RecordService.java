@@ -13,8 +13,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -50,15 +48,8 @@ public class RecordService {
             RecordRequestDTO.TaxDeclarationDTO taxDto = request.getTaxDeclaration();
             TaxDeclarationEntity declaration = TaxDeclarationEntity.builder()
                     .recordId(savedRecord.getRecordId())
-                    .citizenId(request.getCitizenId())
-                    .senderCccd(cccd)
-                    .parcelId(request.getLandParcelId())
-                    .taxYear(java.time.LocalDate.now().getYear())
                     .declaredArea(taxDto.getDeclaredArea())
-                    .declaredPurpose(taxDto.getDeclaredPurpose())
-                    .phoneNumber(taxDto.getPhoneNumber())
-                    .address(taxDto.getAddress())
-                    .status("SUBMITTED")
+                    .declaredUsage(taxDto.getDeclaredPurpose())
                     .build();
 
             taxDeclarationRepository.save(declaration);
@@ -75,7 +66,7 @@ public class RecordService {
 
         // 1. Tìm kiếm Record theo recordId
         RecordEntity record = recordJpaRepository.findById(recordId)
-                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Record not found with id: " + recordId));
 
         String oldStatus = record.getCurrentStatus();
 
@@ -89,21 +80,12 @@ public class RecordService {
         recordJpaRepository.save(record);
 
         // 4. Tìm và cập nhật TaxDeclarationEntity tương ứng
-        TaxDeclarationEntity declaration = taxDeclarationRepository.findById(recordId).orElse(null);
-        if (declaration == null) {
-            // Dự phòng: Tìm theo các trường citizenId, parcelId, và status
-            List<TaxDeclarationEntity> declarations = taxDeclarationRepository
-                    .findByCitizenIdAndParcelIdAndStatus(record.getCitizenId(), record.getLandParcelId(), oldStatus);
-            if (!declarations.isEmpty()) {
-                declaration = declarations.get(0);
-            }
-        }
+        TaxDeclarationEntity declaration = taxDeclarationRepository.findByRecordId(recordId).orElse(null);
 
         if (declaration != null) {
-            declaration.setStatus("VERIFIED");
-            declaration.setReviewNote(request.getForwardNote());
+            declaration.setDeclarationNotes(request.getForwardNote());
             taxDeclarationRepository.save(declaration);
-            log.info("Đã cập nhật trạng thái tờ khai {} sang VERIFIED và cập nhật reviewNote", declaration.getDeclarationId());
+            log.info("Đã cập nhật trạng thái tờ khai {} sang VERIFIED và cập nhật declarationNotes", declaration.getDeclarationId());
         }
 
         log.info("Record {} forwarded successfully from status {} to VERIFIED", recordId, oldStatus);

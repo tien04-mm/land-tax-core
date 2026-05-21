@@ -5,8 +5,6 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEnt
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxPaymentEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxPaymentJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.NotificationJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.NotificationEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,7 +34,6 @@ public class HandlePaymentWebhookUseCase {
     private final TaxPaymentJpaRepository taxPaymentJpaRepository;
     private final RecordJpaRepository recordJpaRepository;
     private final NotificationService notificationService;
-    private final NotificationJpaRepository notificationJpaRepository;
     private final AuditLogService auditLogService;
 
     /**

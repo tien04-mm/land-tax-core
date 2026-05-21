@@ -34,7 +34,7 @@ public class PaymentReconciliationController {
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'TAX_OFFICER')")
     public ResponseEntity<List<ReconciliationLogEntity>> getDiscrepancies() {
         log.info("GET /api/payments/reconcile/discrepancies - Lay danh sach giao dich sai lech");
-        return ResponseEntity.ok(reconciliationLogJpaRepository.findByMatchStatus("DISCREPANCY"));
+        return ResponseEntity.ok(reconciliationLogJpaRepository.findByStatusOrderByCreatedAtDesc("DISCREPANCY"));
     }
 
     /**

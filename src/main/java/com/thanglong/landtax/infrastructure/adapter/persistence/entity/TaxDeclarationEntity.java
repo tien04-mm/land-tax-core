@@ -27,58 +27,22 @@ public class TaxDeclarationEntity {
     @JoinColumn(name = "record_id", insertable = false, updatable = false)
     private RecordEntity record;
 
-    @Column(name = "citizen_id")
-    private Integer citizenId;
-
-    @Column(name = "sender_cccd", length = 20)
-    private String senderCccd;
-
-    @Column(name = "parcel_id")
-    private Integer parcelId;
-
-    @Column(name = "tax_year")
-    private Integer taxYear;
-
     @Column(name = "declared_area", precision = 10, scale = 2)
     private BigDecimal declaredArea;
 
-    @Column(name = "actual_area", precision = 10, scale = 2)
-    private BigDecimal actualArea;
+    @Column(name = "declared_usage", length = 100)
+    private String declaredUsage;
 
-    @Column(name = "declared_purpose", length = 255)
-    private String declaredPurpose;
+    @Column(name = "declaration_notes", columnDefinition = "TEXT")
+    private String declarationNotes;
 
-    @Column(name = "status", length = 50)
-    private String status;
-
-    @Column(name = "review_note", columnDefinition = "TEXT")
-    private String reviewNote;
-
-    @Column(name = "calculated_tax_amount", precision = 15, scale = 2)
-    private BigDecimal calculatedTaxAmount;
-
-    @Column(name = "unit_price", precision = 15, scale = 2)
-    private BigDecimal unitPrice;
-
-    @Column(name = "tax_rate", precision = 5, scale = 2)
-    private BigDecimal taxRate;
-
-    @Column(name = "phone_number", length = 15)
-    private String phoneNumber;
-
-    @Column(name = "address", columnDefinition = "TEXT")
-    private String address;
-
-    @Column(name = "submitted_at")
-    private LocalDateTime submittedAt;
-
-    @Column(name = "supporting_documents", columnDefinition = "TEXT")
-    private String supportingDocuments; // Comma-separated URLs/links (so do photo, giay to chuyen nhuong)
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-        if (submittedAt == null) {
-            submittedAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
         }
     }
 }

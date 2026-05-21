@@ -199,17 +199,11 @@ public class TaxController {
                 .orElseThrow(() -> new RuntimeException("KhAng tim thay to khai"));
 
         // Cho cho phAp soa cac truong an to n khi dang kiem duyet
-        if (updates.containsKey("declaredPurpose")) {
-            entity.setDeclaredPurpose((String) updates.get("declaredPurpose"));
+        if (updates.containsKey("declaredUsage")) {
+            entity.setDeclaredUsage((String) updates.get("declaredUsage"));
         }
-        if (updates.containsKey("reviewNote")) {
-            entity.setReviewNote((String) updates.get("reviewNote"));
-        }
-        if (updates.containsKey("phoneNumber")) {
-            entity.setPhoneNumber((String) updates.get("phoneNumber"));
-        }
-        if (updates.containsKey("address")) {
-            entity.setAddress((String) updates.get("address"));
+        if (updates.containsKey("declarationNotes")) {
+            entity.setDeclarationNotes((String) updates.get("declarationNotes"));
         }
 
         taxDeclarationService.getRepository().save(entity);

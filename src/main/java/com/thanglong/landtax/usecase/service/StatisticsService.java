@@ -43,7 +43,7 @@ public class StatisticsService {
         stats.put("totalTax", totalTax);
 
         // 2. Tinh trang ho so (pendingDeclarations)
-        long pendingDeclarations = taxDeclarationRepository.countByStatus("PENDING");
+        long pendingDeclarations = taxDeclarationRepository.countByRecordCurrentStatus("PENDING");
         stats.put("pendingDeclarations", pendingDeclarations);
         
         // 3. Tong so thua dat (totalParcels)

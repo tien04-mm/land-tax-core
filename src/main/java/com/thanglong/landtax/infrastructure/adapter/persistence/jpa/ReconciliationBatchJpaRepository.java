@@ -4,9 +4,6 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.Reconcili
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
-
 @Repository
 public interface ReconciliationBatchJpaRepository extends JpaRepository<ReconciliationBatchEntity, Integer> {
-    Optional<ReconciliationBatchEntity> findByBatchCode(String batchCode);
 }

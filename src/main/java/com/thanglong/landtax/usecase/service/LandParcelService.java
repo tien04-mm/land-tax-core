@@ -19,10 +19,26 @@ import java.util.stream.Collectors;
 public class LandParcelService {
 
     private final LandParcelJpaRepository landParcelJpaRepository;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository citizenLocalJpaRepository;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandOwnerJpaRepository landOwnerJpaRepository;
 
     public List<LandParcelDTO> getMyLandParcels(String cccd) {
         log.info("Fetching land parcels for CCCD: {}", cccd);
-        List<LandParcelEntity> parcels = landParcelJpaRepository.findByOwnerCccd(cccd);
+        
+        Integer citizenId = citizenLocalJpaRepository.findByCccdNumber(cccd)
+                .map(com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity::getCitizenId)
+                .orElse(null);
+                
+        if (citizenId == null) {
+            log.warn("Citizen not found for CCCD: {}", cccd);
+            return List.of();
+        }
+        
+        List<Integer> parcelIds = landOwnerJpaRepository.findByCitizenId(citizenId).stream()
+                .map(com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandOwnerEntity::getLandParcelId)
+                .collect(Collectors.toList());
+
+        List<LandParcelEntity> parcels = landParcelJpaRepository.findAllById(parcelIds);
         
         if (parcels.isEmpty()) {
             log.warn("No land parcels found for CCCD: {}", cccd);
@@ -31,7 +47,7 @@ public class LandParcelService {
         }
         
         return parcels.stream()
-                .map(this::convertToDTO)
+                .map(p -> convertToDTO(p, cccd))
                 .collect(Collectors.toList());
     }
 
@@ -59,9 +75,6 @@ public class LandParcelService {
             if (updatedEntity.getAddress() != null) {
                 existing.setAddress(updatedEntity.getAddress());
             }
-            if (updatedEntity.getOwnerCccd() != null) {
-                existing.setOwnerCccd(updatedEntity.getOwnerCccd());
-            }
             if (updatedEntity.getAreaSize() != null) {
                 existing.setAreaSize(updatedEntity.getAreaSize());
             }
@@ -83,7 +96,17 @@ public class LandParcelService {
         landParcelJpaRepository.deleteById(id);
     }
 
-    private LandParcelDTO convertToDTO(LandParcelEntity entity) {
+    public boolean isOwner(Integer parcelId, String cccd) {
+        Integer citizenId = citizenLocalJpaRepository.findByCccdNumber(cccd)
+                .map(com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity::getCitizenId)
+                .orElse(null);
+        if (citizenId == null) return false;
+        
+        return landOwnerJpaRepository.findByLandParcelId(parcelId).stream()
+                .anyMatch(o -> o.getCitizenId().equals(citizenId));
+    }
+
+    private LandParcelDTO convertToDTO(LandParcelEntity entity, String ownerCccd) {
         if (entity == null) {
             return null;
         }
@@ -100,11 +123,8 @@ public class LandParcelService {
                 .address(entity.getAddress())
                 .certificateNumber(entity.getCertificateNumber())
                 .gcnBookNumber(entity.getGcnBookNumber())
-                .attachedHouse(entity.getAttachedHouse())
-                .attachedOther(entity.getAttachedOther())
-                .landInfoPdf(entity.getLandInfoPdf())
                 .notes(entity.getNotes())
-                .ownerCccd(entity.getOwnerCccd())
+                .ownerCccd(ownerCccd)
                 .build();
     }
 }

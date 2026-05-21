@@ -5,30 +5,20 @@ import com.thanglong.landtax.infrastructure.adapter.persistence.entity.AccountEn
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.ProcessingLogEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxPaymentEntity;
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandParcelEntity;
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandPriceEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.ProcessingLogJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordJpaRepository;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxPaymentJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxDeclarationRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandParcelJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandPriceJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity;
 import com.thanglong.landtax.usecase.dto.ReviewDeclarationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.math.BigDecimal;
 
 /**
  * Use case xu ly DUYET to khai thue dat.
@@ -61,9 +51,6 @@ public class ApproveDeclarationUseCase {
     private final NotificationService notificationService;
     private final SyncUserFromVneidUseCase syncUserFromVneidUseCase;
     private final AuditLogService auditLogService;
-    private final TaxDeclarationRepository taxDeclarationRepository;
-    private final LandParcelJpaRepository landParcelJpaRepository;
-    private final LandPriceJpaRepository landPriceJpaRepository;
 
     /**
      * Duyet to khai thue.
@@ -102,45 +89,10 @@ public class ApproveDeclarationUseCase {
         record.setCurrentStatus("APPROVED");
         recordJpaRepository.save(record);
 
-        // Tim va cap nhat TaxDeclarationEntity tuong ung
-        List<TaxDeclarationEntity> declarations = taxDeclarationRepository
-                .findByCitizenIdAndParcelIdAndStatus(record.getCitizenId(), record.getLandParcelId(), "VERIFIED");
-
-        BigDecimal taxAmount = BigDecimal.ZERO;
-        if (!declarations.isEmpty()) {
-            TaxDeclarationEntity declaration = declarations.get(0);
-            declaration.setStatus("APPROVED");
-
-            // Tinh toan so tien thue dua tren dien tich dat va bang gia vua duoc cap nhat.
-            LandParcelEntity parcel = landParcelJpaRepository.findById(record.getLandParcelId()).orElse(null);
-            if (parcel != null && parcel.getLandTypeId() != null && parcel.getAreaId() != null) {
-                Optional<LandPriceEntity> priceOpt = landPriceJpaRepository.findLatestPrice(parcel.getLandTypeId(),
-                        parcel.getAreaId());
-                if (priceOpt.isPresent()) {
-                    declaration.setUnitPrice(priceOpt.get().getUnitPrice());
-                }
-            }
-
-            if (declaration.getActualArea() != null && declaration.getUnitPrice() != null) {
-                // Cong thuc chuan: Area * Price * Rate (Gia dinh rate co dinh 0.0003 cho dat o)
-                taxAmount = declaration.getActualArea()
-                        .multiply(declaration.getUnitPrice())
-                        .multiply(new BigDecimal("0.0003"));
-                declaration.setCalculatedTaxAmount(taxAmount);
-            }
-
-            taxDeclarationRepository.save(declaration);
-
-
-        }
-
-        log.info("Record {} status updated: {} -> APPROVED", recordId, oldStatus);
-
         // ===== BUOC 4: Cap nhat tax_payments -> AWAITING_PAYMENT =====
         List<TaxPaymentEntity> payments = taxPaymentJpaRepository.findByRecordId(recordId);
         for (TaxPaymentEntity payment : payments) {
             payment.setPaymentStatus("AWAITING_PAYMENT");
-            payment.setTotalAmountDue(taxAmount); // dong bo so tien
             taxPaymentJpaRepository.save(payment);
         }
 

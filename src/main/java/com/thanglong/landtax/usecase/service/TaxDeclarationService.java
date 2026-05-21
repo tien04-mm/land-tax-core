@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public class TaxDeclarationService {
 
     private final TaxDeclarationRepository repository;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository citizenLocalRepository;
 
     /** Expose repository for direct use by TaxController */
     public TaxDeclarationRepository getRepository() {
@@ -27,7 +28,9 @@ public class TaxDeclarationService {
     public List<TaxDeclarationResponse> getMyHistory(String cccd) {
         log.info("Fetching history for CCCD: {}", cccd);
 
-        List<TaxDeclarationEntity> entities = repository.findBySenderCccdOrderBySubmittedAtDesc(cccd);
+        Integer citizenId = getCitizenIdByCccd(cccd);
+
+        List<TaxDeclarationEntity> entities = repository.findByRecordCitizenIdOrderByCreatedAtDesc(citizenId);
 
         return entities.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
@@ -38,8 +41,9 @@ public class TaxDeclarationService {
         TaxDeclarationEntity entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tax declaration not found"));
 
-        if (!java.util.Objects.equals(entity.getSenderCccd(), currentCccd)) {
-            log.warn("Security warning: CCCD {} attempted to view declaration {} belonging to {}", currentCccd, id, entity.getSenderCccd());
+        Integer currentCitizenId = getCitizenIdByCccd(currentCccd);
+        if (!java.util.Objects.equals(entity.getRecord().getCitizenId(), currentCitizenId)) {
+            log.warn("Security warning: CCCD {} attempted to view declaration {} belonging to citizen {}", currentCccd, id, entity.getRecord().getCitizenId());
             throw new AccessDeniedException("You do not have permission to view this record");
         }
 
@@ -49,18 +53,13 @@ public class TaxDeclarationService {
     private TaxDeclarationResponse mapToResponse(TaxDeclarationEntity entity) {
         return TaxDeclarationResponse.builder()
                 .recordId(entity.getRecordId())
-                .citizenId(entity.getCitizenId())
-                .parcelId(entity.getParcelId())
-                .taxYear(entity.getTaxYear())
+                .citizenId(entity.getRecord() != null ? entity.getRecord().getCitizenId() : null)
+                .parcelId(entity.getRecord() != null ? entity.getRecord().getLandParcelId() : null)
                 .declaredArea(entity.getDeclaredArea())
-                .actualArea(entity.getActualArea())
-                .declaredPurpose(entity.getDeclaredPurpose())
-                .status(entity.getStatus())
-                .reviewNote(entity.getReviewNote())
-                .calculatedTaxAmount(entity.getCalculatedTaxAmount())
-                .unitPrice(entity.getUnitPrice())
-                .taxRate(entity.getTaxRate())
-                .submittedAt(entity.getSubmittedAt())
+                .declaredUsage(entity.getDeclaredUsage())
+                .status(entity.getRecord() != null ? entity.getRecord().getCurrentStatus() : null)
+                .declarationNotes(entity.getDeclarationNotes())
+                .createdAt(entity.getCreatedAt())
                 .build();
     }
 
@@ -72,16 +71,23 @@ public class TaxDeclarationService {
         TaxDeclarationEntity entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tax declaration not found"));
 
-        if (!java.util.Objects.equals(cccd, entity.getSenderCccd())) {
+        Integer currentCitizenId = getCitizenIdByCccd(cccd);
+        if (!java.util.Objects.equals(currentCitizenId, entity.getRecord().getCitizenId())) {
             throw new RuntimeException("You do not have permission to cancel this declaration");
         }
 
-        if (!"PENDING".equals(entity.getStatus())) {
+        if (!"PENDING".equals(entity.getRecord().getCurrentStatus())) {
             throw new IllegalArgumentException("Only PENDING declarations can be cancelled");
         }
 
-        entity.setStatus("CANCELLED");
+        entity.getRecord().setCurrentStatus("CANCELLED");
         repository.save(entity);
         log.info("Cancelled declaration {} for CCCD {}", id, cccd);
+    }
+
+    private Integer getCitizenIdByCccd(String cccd) {
+        return citizenLocalRepository.findByCccdNumber(cccd)
+                .map(com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity::getCitizenId)
+                .orElseThrow(() -> new RuntimeException("Citizen not found for CCCD: " + cccd));
     }
 }

@@ -51,6 +51,7 @@ public class SubmitDeclarationUseCase {
     private final TaxDeclarationRepository taxDeclarationRepository;
     private final AuditLogService auditLogService;
     private final PaymentService paymentService;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandOwnerJpaRepository landOwnerJpaRepository;
 
     /**
      * Nop to khai thue dat.
@@ -73,7 +74,10 @@ public class SubmitDeclarationUseCase {
         LandParcelEntity parcel = landParcelJpaRepository.findById(request.getParcelId())
                 .orElseThrow(() -> new RuntimeException("Land parcel not found: " + request.getParcelId()));
 
-        if (parcel.getOwnerCccd() == null || !parcel.getOwnerCccd().equals(cccdNumber)) {
+        java.util.List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandOwnerEntity> owners = landOwnerJpaRepository.findByLandParcelId(request.getParcelId());
+        boolean isOwner = owners.stream().anyMatch(o -> o.getCitizenId().equals(citizenId));
+
+        if (!isOwner) {
             log.warn(
                     "Security Warning: CCCD {} attempted to submit declaration for parcel {} not owned by them",
                     cccdNumber, request.getParcelId());
@@ -104,7 +108,6 @@ public class SubmitDeclarationUseCase {
                 .taxYear(currentYear)
                 .totalAmountDue(taxResult.getTaxAmount())
                 .dueDate(LocalDate.of(currentYear, 12, 31))
-                .lateFeeAmount(BigDecimal.ZERO)
                 .paymentStatus("UNPAID")
                 .build();
 
@@ -141,19 +144,10 @@ public class SubmitDeclarationUseCase {
 
         com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity declaration = com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity
                 .builder()
-                .citizenId(citizenId)
-                .senderCccd(cccdNumber)
-                .parcelId(request.getParcelId())
-                .taxYear(currentYear)
+                .recordId(savedRecord.getRecordId())
                 .declaredArea(declaredArea)
-                .actualArea(actualArea)
-                .declaredPurpose(parcel.getUsageType())
-                .status(status)
-                .reviewNote(reviewNote)
-                .calculatedTaxAmount(taxResult.getTaxAmount())
-                .unitPrice(taxResult.getUnitPrice())
-                .taxRate(taxResult.getExemptionRate())
-                .supportingDocuments(request.getAttachmentIds() != null ? request.getAttachmentIds().toString() : null)
+                .declaredUsage(parcel.getUsageType())
+                .declarationNotes(reviewNote)
                 .build();
         taxDeclarationRepository.save(declaration);
 
@@ -174,16 +168,11 @@ public class SubmitDeclarationUseCase {
                 .recordId(savedRecord.getRecordId())
                 .citizenId(citizenId)
                 .parcelId(request.getParcelId())
-                .taxYear(currentYear)
                 .declaredArea(declaredArea)
-                .actualArea(actualArea)
-                .declaredPurpose(parcel.getUsageType())
+                .declaredUsage(parcel.getUsageType())
                 .status(status)
-                .reviewNote(reviewNote)
-                .calculatedTaxAmount(taxResult.getTaxAmount())
-                .unitPrice(taxResult.getUnitPrice())
-                .taxRate(taxResult.getExemptionRate())
-                .submittedAt(savedRecord.getSubmittedAt())
+                .declarationNotes(reviewNote)
+                .createdAt(savedRecord.getSubmittedAt())
                 .build();
     }
 }

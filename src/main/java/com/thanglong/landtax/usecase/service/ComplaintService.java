@@ -70,7 +70,6 @@ public class ComplaintService {
 
             notificationService.createNotification(
                     complaint.getCitizenId(),
-                    null,
                     "Khiếu nại đã được giải quyết",
                     notifyContent,
                     "COMPLAINT_RESOLVED"

@@ -10,8 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Service xu ly import hang loat du lieu thua dat tu file Excel (.xlsx).
@@ -27,44 +25,44 @@ import java.util.List;
 public class LandParcelImportService {
 
     private final LandParcelJpaRepository landParcelJpaRepository;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository citizenLocalJpaRepository;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.LandOwnerJpaRepository landOwnerJpaRepository;
 
-    /**
-     * Doc file Excel, parse tung dong du lieu va luu vao database.
-     *
-     * @param file File Excel .xlsx duoc upload boi LAND_OFFICER
-     * @return So luong ban ghi da import thanh cong
-     */
     public int importFromExcel(MultipartFile file) throws Exception {
         log.info("Starting Excel import: fileName={}, size={}KB", file.getOriginalFilename(), file.getSize() / 1024);
 
-        List<LandParcelEntity> parcels = new ArrayList<>();
+        int importedCount = 0;
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
 
             for (Row row : sheet) {
-                // Bo qua header row (row 0)
                 if (row.getRowNum() == 0) continue;
-
-                // Bo qua dong trong
                 if (isRowEmpty(row)) continue;
 
                 try {
                     LandParcelEntity entity = parseRow(row);
-                    parcels.add(entity);
+                    LandParcelEntity saved = landParcelJpaRepository.save(entity);
+                    
+                    String ownerCccd = getCellString(row, 9);
+                    if (ownerCccd != null && !ownerCccd.isEmpty()) {
+                        citizenLocalJpaRepository.findByCccdNumber(ownerCccd).ifPresent(citizen -> {
+                            com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandOwnerEntity owner = com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandOwnerEntity.builder()
+                                    .citizenId(citizen.getCitizenId())
+                                    .landParcelId(saved.getLandParcelId())
+                                    .ownershipType("PRIMARY")
+                                    .build();
+                            landOwnerJpaRepository.save(owner);
+                        });
+                    }
+                    importedCount++;
                 } catch (Exception e) {
                     log.warn("Error parsing row {}: {}", row.getRowNum() + 1, e.getMessage());
-                    // Continue with next row instead of aborting all
                 }
             }
 
-            if (parcels.isEmpty()) {
-                throw new IllegalArgumentException("File Excel does not contain valid data");
-            }
-
-            List<LandParcelEntity> saved = landParcelJpaRepository.saveAll(parcels);
-            log.info("Successfully imported {} land parcels into database", saved.size());
-            return saved.size();
+            log.info("Successfully imported {} land parcels into database", importedCount);
+            return importedCount;
         }
     }
 
@@ -79,7 +77,6 @@ public class LandParcelImportService {
                 .usageType(getCellString(row, 6))
                 .usageDuration(getCellString(row, 7))
                 .certificateNumber(getCellString(row, 8))
-                .ownerCccd(getCellString(row, 9))
                 .build();
     }
 

@@ -90,9 +90,6 @@ public class CreatePaymentLinkUseCase {
 
         // ===== BUOC 4: Tinh so tien =====
         long amount = payment.getTotalAmountDue().longValue();
-        if (payment.getLateFeeAmount() != null) {
-            amount += payment.getLateFeeAmount().longValue();
-        }
 
         // Toi uu description cho PayOS (gioi han 25 ky tu). VD: "Thue 2026 #777" (chi 14 ky tu)
         String description = String.format("Thue %d #%d", payment.getTaxYear(), payId);

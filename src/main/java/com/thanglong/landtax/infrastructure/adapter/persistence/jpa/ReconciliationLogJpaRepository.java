@@ -9,7 +9,7 @@ import java.util.List;
 @Repository
 public interface ReconciliationLogJpaRepository extends JpaRepository<ReconciliationLogEntity, Integer> {
 
-    List<ReconciliationLogEntity> findByMatchStatus(String matchStatus);
+    List<ReconciliationLogEntity> findByStatusOrderByCreatedAtDesc(String status);
 
     List<ReconciliationLogEntity> findByTransactionCode(String transactionCode);
 }

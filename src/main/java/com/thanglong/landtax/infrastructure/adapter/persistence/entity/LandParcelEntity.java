@@ -55,18 +55,6 @@ public class LandParcelEntity {
     @Column(name = "gcn_book_number", length = 50)
     private String gcnBookNumber;
 
-    @Column(name = "attached_house", columnDefinition = "TEXT")
-    private String attachedHouse;
-
-    @Column(name = "attached_other", columnDefinition = "TEXT")
-    private String attachedOther;
-
-    @Column(name = "land_info_pdf", length = 255)
-    private String landInfoPdf;
-
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
-
-    @Column(name = "owner_cccd", length = 20)
-    private String ownerCccd;
 }

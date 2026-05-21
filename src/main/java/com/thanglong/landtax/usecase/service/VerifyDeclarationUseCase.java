@@ -1,16 +1,13 @@
 package com.thanglong.landtax.usecase.service;
 
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.RecordEntity;
-import com.thanglong.landtax.infrastructure.adapter.persistence.entity.TaxDeclarationEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.RecordJpaRepository;
-import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.TaxDeclarationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -20,7 +17,6 @@ import java.util.Map;
 public class VerifyDeclarationUseCase {
 
     private final RecordJpaRepository recordJpaRepository;
-    private final TaxDeclarationRepository taxDeclarationRepository;
     private final AuditLogService auditLogService;
 
     @Transactional
@@ -41,16 +37,7 @@ public class VerifyDeclarationUseCase {
         record.setCurrentStatus("VERIFIED");
         recordJpaRepository.save(record);
 
-        // 4. T m v  c p nh t TaxDeclarationEntity
-        List<TaxDeclarationEntity> declarations = taxDeclarationRepository
-                .findByCitizenIdAndParcelIdAndStatus(record.getCitizenId(), record.getLandParcelId(), "SUBMITTED");
 
-        if (!declarations.isEmpty()) {
-            TaxDeclarationEntity declaration = declarations.get(0);
-            declaration.setStatus("VERIFIED");
-            taxDeclarationRepository.save(declaration);
-            log.info("  c p nh t tr ng th i t  khai {} sang VERIFIED", declaration.getDeclarationId());
-        }
 
         // 5. Ghi Audit Log
         auditLogService.log("VERIFY_DECLARATION", "TAX_DECLARATION", 
