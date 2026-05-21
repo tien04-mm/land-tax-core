@@ -19,7 +19,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
-# JWT Configuration - SHARED SECRET KEY (phải giống hệt với vneid-auth-service)
 jwt:
   secret: ${JWT_SECRET:ThangLong2025VNeIDLandTaxSharedSecretKeyForJWTAuth!@#$%}
 
@@ -44,10 +43,11 @@ gemini:
   api-key: ${GEMINI_API_KEY:mock-gemini-key-for-testing}
 
 # PayOS Configuration
+#thêm key vào đây để test
 payos:
-  client-id: "e007b95d-45b9-4916-bf47-404c4f6c7807"
-  api-key: "1ab4a6a8-795b-4edd-b280-5d7a9269d553"
-  checksum-key: 731809ff42999f81c86efea0ac37b1b4a518241767a512543006e9475ed57d6c
+  client-id: 
+  api-key: 
+  checksum-key: 
   # Hai URL này phải là địa chỉ Front-end (của người dân dùng)
   return-url: http://localhost:3000/payment/success
   cancel-url: http://localhost:3000/payment/cancel
