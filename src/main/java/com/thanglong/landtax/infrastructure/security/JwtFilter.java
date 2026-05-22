@@ -49,6 +49,9 @@ import java.util.Collections;
 @Slf4j
 public class JwtFilter extends OncePerRequestFilter {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRepository accountJpaRepository;
+
     @Value("${jwt.secret}")
     private String jwtSecret;
 
@@ -89,21 +92,44 @@ public class JwtFilter extends OncePerRequestFilter {
                 if (!StringUtils.hasText(activeRole)) {
                     activeRole = claims.get("role", String.class); // Fallback
                 }
+
+                // --- LOGIC MỚI CẦN THAY THẾ ---
+                java.util.List<org.springframework.security.core.GrantedAuthority> authorities = new java.util.ArrayList<>();
+                boolean dbRoleFound = false;
+
+                // 1. Kiểm tra DB trước
+                if (StringUtils.hasText(cccdNumber)) {
+                    java.util.List<String> localRoles = accountJpaRepository.findRoleCodesByCccdNumber(cccdNumber);
+                    if (localRoles != null && !localRoles.isEmpty()) {
+                        for (String localRole : localRoles) {
+                            String authority = localRole.startsWith("ROLE_") ? localRole : "ROLE_" + localRole;
+                            authorities.add(new SimpleGrantedAuthority(authority));
+                        }
+                        dbRoleFound = true;
+                        log.info(">>> [AUTH] Role assigned based on DB: {}", authorities);
+                    }
+                }
+
+                // 2. Fallback sang Token nếu DB không có role
+                if (!dbRoleFound && StringUtils.hasText(activeRole)) {
+                    String jwtAuthority = activeRole.startsWith("ROLE_") ? activeRole : "ROLE_" + activeRole;
+                    authorities.add(new SimpleGrantedAuthority(jwtAuthority));
+                    log.info(">>> [AUTH] Role assigned based on Token (Fallback): {}", authorities);
+                }
                 
                 String email = claims.get("email", String.class);
                 Long citizenId = claims.get("citizenId", Long.class);
                 @SuppressWarnings("unchecked")
                 java.util.List<String> roles = claims.get("roles", java.util.List.class);
 
-                if (StringUtils.hasText(cccdNumber) && StringUtils.hasText(activeRole)) {
+                if (StringUtils.hasText(cccdNumber) && !authorities.isEmpty()) {
                     log.info("JWT Claims: {}", claims);
-                    String authority = activeRole.startsWith("ROLE_") ? activeRole : "ROLE_" + activeRole;
-                    log.info("Assigning authority: {} to user: {}", authority, cccdNumber);
+                    log.info("Assigning authorities: {} to user: {}", authorities, cccdNumber);
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     cccdNumber,                 // Principal = So CCCD
                                     null,                       // Credentials (khong can)
-                                    Collections.singletonList(new SimpleGrantedAuthority(authority))
+                                    authorities
                             );
 
                     // Luu them thong tin vao details de controller co the truy cap
@@ -111,7 +137,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                    log.info("Authenticated user - CCCD: {}, activeRole: {}, authority: {}", cccdNumber, activeRole, authority);
+                    log.info("Authenticated user - CCCD: {}, merged authorities: {}", cccdNumber, authorities);
                 }
 
             } catch (ExpiredJwtException e) {

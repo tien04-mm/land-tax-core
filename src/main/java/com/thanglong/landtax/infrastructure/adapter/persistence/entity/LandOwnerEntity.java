@@ -28,5 +28,5 @@ public class LandOwnerEntity {
     private Integer landParcelId;
 
     @Column(name = "ownership_type", length = 50)
-    private String ownershipType;  // PRIMARY, CO_OWNER, INHERITED
+    private String ownershipType; // PRIMARY, CO_OWNER, INHERITED
 }

@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @Table(name = "land_parcels")
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -57,4 +58,10 @@ public class LandParcelEntity {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "attached_house", columnDefinition = "TEXT")
+    private String attachedHouse;
+
+    @Column(name = "attached_other", columnDefinition = "TEXT")
+    private String attachedOther;
 }

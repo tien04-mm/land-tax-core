@@ -31,14 +31,24 @@ public class LandParcelService {
                 
         if (citizenId == null) {
             log.warn("Citizen not found for CCCD: {}", cccd);
+            System.out.println(">>> [DEBUG] Citizen not found for CCCD: " + cccd);
             return List.of();
         }
         
-        List<Integer> parcelIds = landOwnerJpaRepository.findByCitizenId(citizenId).stream()
+        System.out.println(">>> [DEBUG] Found citizenId: " + citizenId + " for CCCD: " + cccd);
+        
+        List<com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandOwnerEntity> ownerships = landOwnerJpaRepository.findByCitizenId(citizenId);
+        System.out.println(">>> [DEBUG] Found " + ownerships.size() + " ownership records in land_owners for citizenId: " + citizenId);
+
+        List<Integer> parcelIds = ownerships.stream()
                 .map(com.thanglong.landtax.infrastructure.adapter.persistence.entity.LandOwnerEntity::getLandParcelId)
                 .collect(Collectors.toList());
+        
+        System.out.println(">>> [DEBUG] Parcel IDs extracted from land_owners: " + parcelIds);
 
         List<LandParcelEntity> parcels = landParcelJpaRepository.findAllById(parcelIds);
+        
+        System.out.println(">>> [DEBUG] Found " + parcels.size() + " actual parcels in land_parcels table");
         
         if (parcels.isEmpty()) {
             log.warn("No land parcels found for CCCD: {}", cccd);
@@ -87,6 +97,12 @@ public class LandParcelService {
             if (updatedEntity.getMapSheetNumber() != null) {
                 existing.setMapSheetNumber(updatedEntity.getMapSheetNumber());
             }
+            if (updatedEntity.getAttachedHouse() != null) {
+                existing.setAttachedHouse(updatedEntity.getAttachedHouse());
+            }
+            if (updatedEntity.getAttachedOther() != null) {
+                existing.setAttachedOther(updatedEntity.getAttachedOther());
+            }
             return landParcelJpaRepository.save(existing);
         }).orElseThrow(() -> new RuntimeException("Land parcel not found with ID " + id));
     }
@@ -110,7 +126,10 @@ public class LandParcelService {
         if (entity == null) {
             return null;
         }
-        return LandParcelDTO.builder()
+        
+        System.out.println(">>> [DEBUG] Entity tr  c khi map: " + entity.toString());
+        
+        LandParcelDTO dto = LandParcelDTO.builder()
                 .landParcelId(entity.getLandParcelId())
                 .landTypeId(entity.getLandTypeId())
                 .areaId(entity.getAreaId())
@@ -124,7 +143,13 @@ public class LandParcelService {
                 .certificateNumber(entity.getCertificateNumber())
                 .gcnBookNumber(entity.getGcnBookNumber())
                 .notes(entity.getNotes())
+                .attachedHouse(entity.getAttachedHouse())
+                .attachedOther(entity.getAttachedOther())
                 .ownerCccd(ownerCccd)
                 .build();
+                
+        System.out.println(">>> [DEBUG MAPPER] Parcel DTO AFTER Mapping: " + dto.toString());
+        
+        return dto;
     }
 }

@@ -13,6 +13,13 @@ public interface AccountJpaRepository extends JpaRepository<AccountEntity, Integ
 
     boolean existsByCitizenId(Integer citizenId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT r.roleCode " +
+            "FROM AccountEntity a " +
+            "JOIN CitizenLocalEntity c ON a.citizenId = c.citizenId " +
+            "JOIN RoleEntity r ON a.roleId = r.roleId " +
+            "WHERE c.cccdNumber = :cccdNumber")
+    java.util.List<String> findRoleCodesByCccdNumber(@org.springframework.data.repository.query.Param("cccdNumber") String cccdNumber);
+
     @org.springframework.data.jpa.repository.Query("SELECT new com.thanglong.landtax.usecase.dto.UserAdminDTO(" +
             "c.cccdNumber, c.fullName, r.roleCode, a.accountStatus, c.phoneNumber, c.email) " +
             "FROM AccountEntity a " +

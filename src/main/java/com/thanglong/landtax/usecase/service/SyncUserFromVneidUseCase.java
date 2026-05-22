@@ -58,16 +58,8 @@ public class SyncUserFromVneidUseCase {
      */
     @Transactional
     public Integer syncAndGetCitizenId(String cccdNumber) {
-        // ===== B C 1: Ki m tra CCCD t n t i trong DB c c b ch a =====
-        var existingCitizen = citizenLocalJpaRepository.findByCccdNumber(cccdNumber);
-        if (existingCitizen.isPresent()) {
-            log.info("Citizen already exists locally: CCCD={}, citizenId={}",
-                    cccdNumber, existingCitizen.get().getCitizenId());
-            return existingCitizen.get().getCitizenId();
-        }
-
-        // ===== B C 2: G i VNeID Internal API l y th ng tin =====
-        log.info("Citizen not found locally. Fetching from VNeID: CCCD={}", cccdNumber);
+        // ===== B C 1: G i VNeID Internal API l y th ng tin m i nh t =====
+        log.info("Fetching latest info from VNeID: CCCD={}", cccdNumber);
 
         CitizenIdentityDTO vneidData;
         try {
@@ -86,6 +78,22 @@ public class SyncUserFromVneidUseCase {
 
         if (vneidData == null) {
             throw new RuntimeException("VNeID tr  v  d  li u r ng cho CCCD: " + cccdNumber);
+        }
+
+        // ===== B C 2: Ki m tra CCCD t n t i trong DB c c b ch a =====
+        var existingCitizenOpt = citizenLocalJpaRepository.findByCccdNumber(cccdNumber);
+        if (existingCitizenOpt.isPresent()) {
+            CitizenLocalEntity existingCitizen = existingCitizenOpt.get();
+            // C p nh t th ng tin t  VNeID
+            existingCitizen.setFullName(java.util.Optional.ofNullable(vneidData.getFullName()).orElse(existingCitizen.getFullName()));
+            if (vneidData.getEmail() != null) existingCitizen.setEmail(vneidData.getEmail());
+            if (vneidData.getPhoneNumber() != null) existingCitizen.setPhoneNumber(vneidData.getPhoneNumber());
+            
+            citizenLocalJpaRepository.save(existingCitizen);
+            
+            log.info("Citizen already exists locally, updated info: CCCD={}, citizenId={}",
+                    cccdNumber, existingCitizen.getCitizenId());
+            return existingCitizen.getCitizenId();
         }
 
         // ===== B C 3: INSERT v o b ng citizens =====

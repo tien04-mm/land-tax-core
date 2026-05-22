@@ -50,9 +50,21 @@ public class ProfileService {
                 .orElse(new CitizenLocalEntity());
 
         citizen.setCccdNumber(cccdNumber);
-        citizen.setFullName(vneidData.getFullName());
-        citizen.setEmail(vneidData.getEmail());
-        citizen.setPhoneNumber(vneidData.getPhoneNumber());
+        
+        // VNeID l  Source of Truth: C p nh t n u c  d  li u, tr nh tr  ng h p ghi    b ng null
+        if (org.springframework.util.StringUtils.hasText(vneidData.getFullName())) {
+            citizen.setFullName(vneidData.getFullName());
+        } else if (citizen.getFullName() == null) {
+            citizen.setFullName("Unknown");
+        }
+        
+        if (org.springframework.util.StringUtils.hasText(vneidData.getEmail())) {
+            citizen.setEmail(vneidData.getEmail());
+        }
+        
+        if (org.springframework.util.StringUtils.hasText(vneidData.getPhoneNumber())) {
+            citizen.setPhoneNumber(vneidData.getPhoneNumber());
+        }
 
         return citizenLocalJpaRepository.save(citizen);
     }
