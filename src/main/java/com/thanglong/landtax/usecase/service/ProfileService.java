@@ -20,6 +20,7 @@ public class ProfileService {
 
     private final VneidServiceClient vneidServiceClient;
     private final CitizenLocalJpaRepository citizenLocalJpaRepository;
+    private final com.thanglong.landtax.infrastructure.adapter.persistence.jpa.AccountJpaRepository accountJpaRepository;
 
     @org.springframework.beans.factory.annotation.Value("${internal.api.secret:VNeIDInternalSecretKey2025}")
     private String internalSecret;
@@ -72,5 +73,21 @@ public class ProfileService {
     public CitizenLocalEntity getProfile(String cccdNumber) {
         return citizenLocalJpaRepository.findByCccdNumber(cccdNumber)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay profile cho CCCD: " + cccdNumber));
+    }
+
+    public com.thanglong.landtax.usecase.dto.ProfileResponse getProfileMe(String cccdNumber) {
+        CitizenLocalEntity citizen = citizenLocalJpaRepository.findByCccdNumber(cccdNumber)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy người dùng trong hệ thống thuế đất"));
+
+        java.util.List<String> roles = accountJpaRepository.findRoleCodesByCccdNumber(cccdNumber);
+        if (roles == null || roles.isEmpty()) {
+            roles = java.util.List.of("ROLE_CITIZEN");
+        }
+
+        return com.thanglong.landtax.usecase.dto.ProfileResponse.builder()
+                .fullName(citizen.getFullName())
+                .email(citizen.getEmail())
+                .roles(roles)
+                .build();
     }
 }
