@@ -64,6 +64,11 @@ public class AuthService {
                 AccountEntity account = accountJpaRepository.findByCitizenId(citizenId)
                                 .orElseThrow(() -> new RuntimeException("Account not found"));
 
+                if (account.getAccountStatus() == null || !"ACTIVE".equalsIgnoreCase(account.getAccountStatus())) {
+                        throw new com.thanglong.landtax.infrastructure.adapter.controller.exception.AccountInactiveException(
+                                        "Tài khoản của bạn đã bị khóa hoặc chưa được kích hoạt");
+                }
+
                 // 3. Tim tat ca cac vai tro (chi lay role goc tu bang roles)
                 List<String> roles = getAllRolesForAccount(account);
                 String activeRole = roles.get(0);

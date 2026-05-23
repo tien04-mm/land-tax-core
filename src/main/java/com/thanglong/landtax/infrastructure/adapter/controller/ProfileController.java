@@ -25,7 +25,7 @@ public class ProfileController {
     }
 
     @org.springframework.web.bind.annotation.GetMapping
-    public ResponseEntity<?> getProfile() {
+    public ResponseEntity<com.thanglong.landtax.usecase.dto.ProfileResponse> getProfile() {
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(profileService.getProfile(cccd));
     }
