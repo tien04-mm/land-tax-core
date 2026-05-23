@@ -12,4 +12,12 @@ public interface ProcessingLogJpaRepository extends JpaRepository<ProcessingLogE
     List<ProcessingLogEntity> findByRecordIdOrderByProcessedAtDesc(Integer recordId);
 
     List<ProcessingLogEntity> findByProcessorAccountId(Integer processorAccountId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT p FROM ProcessingLogEntity p WHERE " +
+           "(:actionType IS NULL OR p.processingStep = :actionType) AND " +
+           "(:actorId IS NULL OR p.processorAccountId = :actorId) " +
+           "ORDER BY p.processedAt DESC")
+    List<ProcessingLogEntity> filterLogs(
+            @org.springframework.data.repository.query.Param("actionType") String actionType,
+            @org.springframework.data.repository.query.Param("actorId") Integer actorId);
 }

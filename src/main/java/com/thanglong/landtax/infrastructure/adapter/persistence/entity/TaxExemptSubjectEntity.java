@@ -41,10 +41,16 @@ public class TaxExemptSubjectEntity {
     @Column(name = "uploaded_at")
     private LocalDateTime uploadedAt;
 
+    @Column(name = "status", length = 20)
+    private String status;
+
     @PrePersist
     protected void onCreate() {
         if (uploadedAt == null) {
             uploadedAt = LocalDateTime.now();
+        }
+        if (status == null) {
+            status = "PENDING";
         }
     }
 }

@@ -3,15 +3,20 @@ package com.thanglong.landtax.infrastructure.adapter.controller;
 import com.thanglong.landtax.domain.model.Complaint;
 import com.thanglong.landtax.infrastructure.adapter.persistence.entity.CitizenLocalEntity;
 import com.thanglong.landtax.infrastructure.adapter.persistence.jpa.CitizenLocalJpaRepository;
+import com.thanglong.landtax.usecase.dto.ComplaintRequestDTO;
+import com.thanglong.landtax.usecase.dto.ComplaintResponseDTO;
+import com.thanglong.landtax.usecase.dto.ComplaintUpdateRequestDTO;
 import com.thanglong.landtax.usecase.service.ComplaintService;
 import com.thanglong.landtax.infrastructure.adapter.controller.exception.ResourceNotFoundException;
-import lombok.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * REST Controller cho các API liên quan đến Khiếu nại (Complaints).
@@ -19,6 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/complaints")
 @RequiredArgsConstructor
+@Slf4j
 public class ComplaintController {
 
     private final ComplaintService complaintService;
@@ -28,8 +34,9 @@ public class ComplaintController {
      * Công dân gửi khiếu nại (yêu cầu Auth).
      */
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_CITIZEN')")
-    public ResponseEntity<Complaint> submitComplaint(@RequestBody SubmitRequest request) {
+    @PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<ComplaintResponseDTO> submitComplaint(@RequestBody ComplaintRequestDTO request) {
+        log.info("POST /api/complaints");
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
         CitizenLocalEntity citizen = citizenLocalJpaRepository.findByCccdNumber(cccd)
                 .orElseThrow(() -> new ResourceNotFoundException("Công dân không tồn tại với số CCCD này"));
@@ -41,57 +48,76 @@ public class ComplaintController {
                 .build();
 
         Complaint saved = complaintService.submitComplaint(complaint);
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(mapToResponseDTO(saved));
     }
 
     /**
-     * Công dân xem danh sách khiếu nại của chính mình.
+     * Công dân xem danh sách khiếu nại của chính mình (đường dẫn /my).
      */
     @GetMapping("/my")
-    @PreAuthorize("hasAuthority('ROLE_CITIZEN')")
-    public ResponseEntity<List<Complaint>> getMyComplaints() {
+    @PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<List<ComplaintResponseDTO>> getMyComplaints() {
+        log.info("GET /api/complaints/my");
         String cccd = SecurityContextHolder.getContext().getAuthentication().getName();
         CitizenLocalEntity citizen = citizenLocalJpaRepository.findByCccdNumber(cccd)
                 .orElseThrow(() -> new ResourceNotFoundException("Công dân không tồn tại với số CCCD này"));
 
-        List<Complaint> myComplaints = complaintService.getComplaintsByCitizen(citizen.getCitizenId());
+        List<ComplaintResponseDTO> myComplaints = complaintService.getComplaintsByCitizen(citizen.getCitizenId()).stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(myComplaints);
     }
 
     /**
-     * Cán bộ phản hồi khiếu nại.
+     * Công dân xem danh sách khiếu nại của chính mình (đường dẫn /me).
      */
-    @PutMapping("/{id}/respond")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER', 'ROLE_TAX_OFFICER')")
-    public ResponseEntity<Complaint> respondToComplaint(
-            @PathVariable Integer id,
-            @RequestBody RespondRequest request) {
-        Complaint updated = complaintService.respondToComplaint(id, request.getResponseNote());
-        return ResponseEntity.ok(updated);
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('CITIZEN')")
+    public ResponseEntity<List<ComplaintResponseDTO>> getMyComplaintsMe() {
+        log.info("GET /api/complaints/me");
+        return getMyComplaints();
     }
 
     /**
-     * Cán bộ xem toàn bộ danh sách khiếu nại.
+     * Cán bộ xem toàn bộ hoặc lọc theo loại khiếu nại.
      */
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_LAND_OFFICER', 'ROLE_TAX_OFFICER')")
-    public ResponseEntity<List<Complaint>> getAllComplaints() {
-        List<Complaint> complaints = complaintService.getAllComplaints();
+    @PreAuthorize("hasAnyRole('ADMIN', 'TAX_OFFICER', 'LAND_OFFICER')")
+    public ResponseEntity<List<ComplaintResponseDTO>> getComplaints(
+            @RequestParam(required = false) String type) {
+        log.info("GET /api/complaints - type={}", type);
+        List<ComplaintResponseDTO> complaints = complaintService.getComplaintsWithRoleFilter(type).stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(complaints);
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SubmitRequest {
-        private Integer recordId;
-        private String content;
+    /**
+     * Cập nhật khiếu nại (Admin, Tax Officer, Land Officer).
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TAX_OFFICER', 'LAND_OFFICER')")
+    public ResponseEntity<ComplaintResponseDTO> updateComplaint(
+            @PathVariable Integer id,
+            @RequestBody ComplaintUpdateRequestDTO request) {
+        log.info("PUT /api/complaints/{} - status={}, responseNote={}", id, request.getStatus(), request.getResponseNote());
+        Complaint updated = complaintService.updateComplaint(id, request.getStatus(), request.getResponseNote());
+        return ResponseEntity.ok(mapToResponseDTO(updated));
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class RespondRequest {
-        private String responseNote;
+    private ComplaintResponseDTO mapToResponseDTO(Complaint complaint) {
+        if (complaint == null) {
+            return null;
+        }
+        return ComplaintResponseDTO.builder()
+                .id(complaint.getId())
+                .citizenId(complaint.getCitizenId())
+                .recordId(complaint.getRecordId())
+                .content(complaint.getContent())
+                .status(complaint.getStatus())
+                .responseNote(complaint.getResponseNote())
+                .createdAt(complaint.getCreatedAt())
+                .updatedAt(complaint.getUpdatedAt())
+                .build();
     }
 }

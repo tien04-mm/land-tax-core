@@ -14,6 +14,8 @@ public interface ComplaintRepository {
 
     List<Complaint> findByCitizenId(Integer citizenId);
 
+    List<Complaint> findByComplaintType(String type);
+
     List<Complaint> findAll();
 
     Complaint save(Complaint complaint);

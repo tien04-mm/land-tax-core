@@ -13,4 +13,10 @@ import java.util.List;
 public interface ComplaintJpaRepository extends JpaRepository<ComplaintEntity, Integer> {
 
     List<ComplaintEntity> findByCitizenCitizenId(Integer citizenId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT c FROM ComplaintEntity c WHERE " +
+           "(:type IS NULL) OR " +
+           "(:type = 'TAX' AND c.record.recordCategory = 'TAX_DECLARATION') OR " +
+           "(:type = 'LAND' AND (c.record IS NULL OR c.record.recordCategory <> 'TAX_DECLARATION'))")
+    List<ComplaintEntity> findByComplaintType(@org.springframework.data.repository.query.Param("type") String type);
 }

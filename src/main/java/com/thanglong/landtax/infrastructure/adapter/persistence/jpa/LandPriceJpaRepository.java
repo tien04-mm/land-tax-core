@@ -25,4 +25,12 @@ public interface LandPriceJpaRepository extends JpaRepository<LandPriceEntity, I
 
     /** Loc theo ca loai dat va khu vuc */
     List<LandPriceEntity> findByLandTypeIdAndAreaId(Integer landTypeId, Integer areaId);
+
+    @Query("SELECT lp FROM LandPriceEntity lp WHERE " +
+           "(:landTypeId IS NULL OR lp.landTypeId = :landTypeId) AND " +
+           "(:areaId IS NULL OR lp.areaId = :areaId) " +
+           "ORDER BY lp.appliedFrom DESC")
+    List<LandPriceEntity> findPriceHistory(
+            @org.springframework.data.repository.query.Param("landTypeId") Integer landTypeId,
+            @org.springframework.data.repository.query.Param("areaId") Integer areaId);
 }

@@ -60,6 +60,9 @@ public class SecurityConfig {
                 // Các API công khai
                 .requestMatchers("/api/public/**", "/api/auth/**", "/api/webhook/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/profile/sync", "/api/land-prices/lookup", "/api/lands/**", "/error").permitAll()
                 // Phân quyền theo Role
+                .requestMatchers("/api/admin/logs").hasAnyAuthority("ROLE_ADMIN", "ROLE_TAX_OFFICER", "ROLE_LAND_OFFICER", "ROLE_CITIZEN")
+                .requestMatchers(HttpMethod.GET, "/api/admin/areas/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_LAND_OFFICER", "ROLE_TAX_OFFICER", "ROLE_CITIZEN")
+                .requestMatchers(HttpMethod.PUT, "/api/admin/areas/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_LAND_OFFICER")
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                 .requestMatchers("/api/reports/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_TAX_OFFICER", "ROLE_LAND_OFFICER")
                 .requestMatchers("/api/records/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_LAND_OFFICER", "ROLE_TAX_OFFICER")

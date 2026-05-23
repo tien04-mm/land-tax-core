@@ -36,6 +36,13 @@ public class ComplaintRepositoryImpl implements ComplaintRepository {
     }
 
     @Override
+    public List<Complaint> findByComplaintType(String type) {
+        return complaintJpaRepository.findByComplaintType(type).stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<Complaint> findAll() {
         return complaintJpaRepository.findAll().stream()
                 .map(this::toDomain)
